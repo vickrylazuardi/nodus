@@ -152,6 +152,26 @@ Lihat [CONTRIBUTING.md](CONTRIBUTING.md). Ringkasnya: buka issue sebelum PR
 besar, jalankan seluruh pemeriksaan di atas, dan jangan mengubah skor data
 tanpa menyertakan sumber publik.
 
+### Mengirim data dalam jumlah banyak
+
+Kalau kamu punya data yang lebih akurat, tidak perlu menyentuh database. Masuk
+ke **Dashboard admin > Impor**, lalu unggah satu file JSON atau beberapa file
+CSV. Rujukan memakai **nama figur dan nama isu**, bukan id, karena id hanya
+berarti di dalam satu instalasi.
+
+Alurnya dua langkah: **Periksa dulu** memvalidasi tanpa menulis apa pun, lalu
+**Terapkan** menyimpan. Kalau ada satu baris bermasalah, seluruh unggahan
+dibatalkan, jadi tidak ada kondisi setengah jadi.
+
+Format lengkapnya, termasuk aturan yang ditegakkan dan batas tiap kolom, ada di
+[docs/IMPORT-FORMAT.md](docs/IMPORT-FORMAT.md). Untuk memulai, unduh contoh dari
+halaman Impor: tombol ekspor menghasilkan file yang bisa langsung diunggah
+kembali tanpa mengubah apa pun.
+
+Satu aturan yang paling mudah terlewat: relasi bersifat **tidak berarah** dan
+disimpan sekali per pasangan. Menulis `A,B` dan `B,A` akan ditolak, bukan
+digabung, karena kedua baris itu bisa berbeda di semua kolom.
+
 ## Lisensi
 
 MIT. Lihat [LICENSE](LICENSE).

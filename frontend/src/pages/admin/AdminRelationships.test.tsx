@@ -209,6 +209,30 @@ function installFetchStub(overrides: Partial<Record<string, () => Response>> = {
       if (path === "/api/issues" && method === "GET") {
         return Promise.resolve(json({ issues: ISSUES, count: ISSUES.length }));
       }
+      /*
+       * The relationship-kind and modifier-kind lists come from the API rather
+       * than a literal in the component. `alliance` is included deliberately:
+       * 25 of the 150 seeded relationships use it, and the old hardcoded list
+       * in the component omitted it, so the dropdown could not express the kind
+       * of a fifth of the data.
+       */
+      if (path === "/api/tiers" && method === "GET") {
+        return Promise.resolve(
+          json({
+            tiers: [],
+            rel_types: ["political", "coalition", "alliance", "family", "business", "party", "government"],
+            modifier_kinds: [
+              "event",
+              "scandal",
+              "deal",
+              "betrayal",
+              "support",
+              "endorsement",
+              "legal",
+            ],
+          }),
+        );
+      }
       if (path === "/api/admin/relationships" && method === "POST") {
         return Promise.resolve(json({ id: 9 }, 201));
       }
@@ -637,5 +661,38 @@ describe("T6 — AdminRelationships ARIA", () => {
         calls.some((c) => c.method === "DELETE" && c.path === "/api/admin/relationships/7"),
       ).toBe(true),
     );
+  });
+});
+
+describe("relationship kinds come from the API, not a literal in the component", () => {
+  it("offers every kind the API returns", async () => {
+    installFetchStub();
+    const user = userEvent.setup();
+    renderAdminRelationships();
+
+    // The create form is behind a toggle.
+    await user.click(await screen.findByRole("button", { name: /relasi baru/i }));
+
+    const select = await screen.findByLabelText(/^Jenis$/i);
+    const values = Array.from(select.querySelectorAll("option")).map((o) =>
+      o.getAttribute("value"),
+    );
+
+    /*
+     * `alliance` is the one that matters. The component previously held its own
+     * hardcoded array that omitted it, while 25 of the 150 seeded relationships
+     * use it, so the dropdown could not express the kind of a fifth of the data
+     * and an admin editing such a tie would silently change its kind.
+     */
+    expect(values).toContain("alliance");
+    expect(values).toEqual([
+      "political",
+      "coalition",
+      "alliance",
+      "family",
+      "business",
+      "party",
+      "government",
+    ]);
   });
 });

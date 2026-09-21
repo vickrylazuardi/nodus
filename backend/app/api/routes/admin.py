@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+import json
+
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from fastapi.responses import Response
 from sqlalchemy import delete, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -15,6 +18,8 @@ from app.schemas import (
     AuditListOut,
     FigureCreate,
     FigureUpdate,
+    ImportProblemOut,
+    ImportResultOut,
     IssueCreate,
     IssueUpdate,
     LoginIn,
@@ -25,6 +30,7 @@ from app.schemas import (
     RelationshipUpdate,
     TokenOut,
 )
+from app.services import importer
 from app.services import repository as repo
 
 router = APIRouter(tags=["admin"])
@@ -354,6 +360,153 @@ def delete_modifier(
     repo.write_audit(db, actor=user.username, entity="modifier", entity_id=mod_id, action="delete")
     _commit(db)
     return {"ok": True}
+
+
+# --------------------------------------------------------------------------- import
+@router.post("/import/preview", response_model=ImportResultOut)
+async def preview_import(
+    files: list[UploadFile] = File(...),
+    db: Session = Depends(get_db),
+    _: User = Depends(get_current_user),
+) -> ImportResultOut:
+    """Validate an upload and report what it would do, without writing.
+
+    Runs exactly the checks the apply endpoint runs, so a clean preview means
+    the apply will succeed. Nothing is committed.
+    """
+    rows = await _read_upload(files)
+    if isinstance(rows, ImportResultOut):
+        return rows
+    figures, issues, relationships, problems = rows
+
+    result = importer.run_import(
+        db,
+        figures=figures,
+        issues=issues,
+        relationships=relationships,
+        parse_problems=problems,
+        apply=False,
+    )
+    return ImportResultOut.model_validate(result.as_dict())
+
+
+@router.post("/import", response_model=ImportResultOut)
+async def apply_import(
+    files: list[UploadFile] = File(...),
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> ImportResultOut:
+    """Validate and write. Refuses the whole upload if any row is invalid."""
+    rows = await _read_upload(files)
+    if isinstance(rows, ImportResultOut):
+        return rows
+    figures, issues, relationships, problems = rows
+
+    result = importer.run_import(
+        db,
+        figures=figures,
+        issues=issues,
+        relationships=relationships,
+        parse_problems=problems,
+        apply=True,
+    )
+
+    if result.ok:
+        totals = result.counts
+        summary = ", ".join(
+            f"{name} {counts.created} baru/{counts.updated} diperbarui"
+            for name, counts in totals.items()
+        )
+        repo.write_audit(
+            db,
+            actor=user.username,
+            entity="dataset",
+            entity_id=None,
+            action="import",
+            detail=summary or "tidak ada perubahan",
+        )
+        _commit(db)
+
+    return ImportResultOut.model_validate(result.as_dict())
+
+
+async def _read_upload(
+    files: list[UploadFile],
+) -> tuple[list[importer.Row], list[importer.Row], list[importer.Row], list[importer.Problem]] | ImportResultOut:
+    """Turn the uploaded files into rows, or return an early error result.
+
+    A single .json file is read as a bundle; anything else is treated as the CSV
+    set. The distinction is made on the extension because that is what a
+    contributor controls.
+    """
+    decoded: dict[str, str] = {}
+    for upload in files:
+        raw = await upload.read()
+        name = upload.filename or "unnamed"
+        try:
+            decoded[name] = raw.decode("utf-8-sig")
+        except UnicodeDecodeError:
+            return ImportResultOut(
+                ok=False,
+                applied=False,
+                counts={},
+                problems=[
+                    ImportProblemOut(
+                        severity="error",
+                        location=name,
+                        message=(
+                            "File bukan teks UTF-8. Kalau diekspor dari Excel, "
+                            "simpan ulang sebagai CSV UTF-8."
+                        ),
+                    )
+                ],
+            )
+
+    json_files = [n for n in decoded if n.casefold().endswith(".json")]
+    if json_files:
+        if len(decoded) > 1:
+            return ImportResultOut(
+                ok=False,
+                applied=False,
+                counts={},
+                problems=[
+                    ImportProblemOut(
+                        severity="error",
+                        location="unggahan",
+                        message=(
+                            "Kirim satu file JSON saja, atau kumpulan CSV. "
+                            "Jangan mencampurnya."
+                        ),
+                    )
+                ],
+            )
+        figures, issues, relationships, problems = importer.parse_bundle(
+            decoded[json_files[0]]
+        )
+        return figures, issues, relationships, problems
+
+    return importer.parse_csv_files(decoded)
+
+
+# --------------------------------------------------------------------------- export
+@router.get("/export")
+def export_bundle(
+    db: Session = Depends(get_db),
+    _: User = Depends(get_current_user),
+) -> Response:
+    """Download the whole dataset in the import format.
+
+    Doubles as the template: a contributor can export, edit, and re-import the
+    same file, which guarantees the format is round-trippable rather than
+    aspirational.
+    """
+    payload = importer.build_bundle(db)
+    body = json.dumps(payload, indent=2, ensure_ascii=False)
+    return Response(
+        content=body,
+        media_type="application/json",
+        headers={"Content-Disposition": 'attachment; filename="prism-bundle.json"'},
+    )
 
 
 # --------------------------------------------------------------------------- audit

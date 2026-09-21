@@ -274,3 +274,30 @@ export interface AuditList {
   entries: AuditEntry[];
   count: number;
 }
+
+/* --------------------------------------------------------------------- import */
+
+export interface ImportProblem {
+  severity: "error" | "warning";
+  location: string;
+  message: string;
+}
+
+export interface ImportCounts {
+  created: number;
+  updated: number;
+}
+
+/**
+ * Mirrors ImportResultOut in backend/app/schemas/__init__.py.
+ *
+ * A validation failure is not an HTTP error: the endpoint answers 200 with
+ * ok:false and a list of problems, so the UI can show every mistake at once
+ * rather than only the first one the server happened to hit.
+ */
+export interface ImportResult {
+  ok: boolean;
+  applied: boolean;
+  problems: ImportProblem[];
+  counts: Record<string, ImportCounts>;
+}

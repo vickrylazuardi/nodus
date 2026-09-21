@@ -7,6 +7,7 @@ so every response is documented in the generated OpenAPI spec.
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -378,4 +379,25 @@ class AuditListOut(BaseModel):
 class HealthOut(BaseModel):
     status: str
     counts: dict[str, int]
-    data_is_illustrative: bool
+    data_is_illustrative: bool = True
+
+
+# --------------------------------------------------------------------------- import
+class ImportProblemOut(BaseModel):
+    """One thing wrong with an upload, located as precisely as possible."""
+
+    severity: Literal["error", "warning"]
+    location: str
+    message: str
+
+
+class ImportCountsOut(BaseModel):
+    created: int = 0
+    updated: int = 0
+
+
+class ImportResultOut(BaseModel):
+    ok: bool
+    applied: bool = False
+    problems: list[ImportProblemOut] = Field(default_factory=list)
+    counts: dict[str, ImportCountsOut] = Field(default_factory=dict)

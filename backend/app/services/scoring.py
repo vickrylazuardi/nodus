@@ -67,7 +67,12 @@ TIERS: tuple[Tier, ...] = (
     ),
 )
 
-REL_TYPES = ("political", "coalition", "family", "business", "party", "government")
+# Relationship kinds. `alliance` is here because the dataset uses it for 25
+# ties; it was previously missing while `business` and `government` were listed
+# but unused, so the admin dropdown could not create the kind of relationship
+# that a fifth of the data actually is. This tuple is the single source: the
+# public API serves it, and the importer validates against it.
+REL_TYPES = ("political", "coalition", "alliance", "family", "business", "party", "government")
 MODIFIER_KINDS = ("event", "scandal", "deal", "betrayal", "support", "endorsement", "legal")
 
 

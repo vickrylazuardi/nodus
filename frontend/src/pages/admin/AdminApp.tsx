@@ -14,6 +14,7 @@ import {
 import { ApiError, api, tokenStore } from "@/lib/api";
 import { cx } from "@/lib/format";
 import { AdminFigures } from "@/pages/admin/AdminFigures";
+import { AdminImport } from "@/pages/admin/AdminImport";
 import { AdminIssues } from "@/pages/admin/AdminIssues";
 import { AdminRelationships } from "@/pages/admin/AdminRelationships";
 import { AdminAudit } from "@/pages/admin/AdminAudit";
@@ -125,6 +126,7 @@ const ADMIN_NAV = [
   { to: "/admin/figur", label: "Figur" },
   { to: "/admin/relasi", label: "Relasi" },
   { to: "/admin/isu", label: "Isu" },
+  { to: "/admin/impor", label: "Impor" },
   { to: "/admin/riwayat", label: "Riwayat" },
 ];
 
@@ -231,6 +233,7 @@ export function AdminApp() {
           <Route path="figur" element={<AdminFigures />} />
           <Route path="relasi" element={<AdminRelationships />} />
           <Route path="isu" element={<AdminIssues />} />
+          <Route path="impor" element={<AdminImport />} />
           <Route path="riwayat" element={<AdminAudit />} />
           <Route path="*" element={<Navigate to="/admin" replace />} />
         </Routes>

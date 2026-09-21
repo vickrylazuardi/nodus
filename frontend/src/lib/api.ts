@@ -10,6 +10,7 @@ import type {
   FigureList,
   GraphData,
   Health,
+  ImportResult,
   Issue,
   IssueList,
   MatrixData,
@@ -115,9 +116,79 @@ function query(params: Record<string, string | number | boolean | undefined | nu
   return qs ? `?${qs}` : "";
 }
 
+/**
+ * Upload files as multipart/form-data.
+ *
+ * Separate from `request` because a multipart body must NOT set Content-Type:
+ * the browser has to add the boundary, and setting the header by hand makes the
+ * server unable to parse the body at all. Sending it as JSON is not an option
+ * either, since the payload is a file.
+ */
+async function upload<T>(path: string, files: File[]): Promise<T> {
+  const form = new FormData();
+  for (const file of files) form.append("files", file, file.name);
+
+  const headers: Record<string, string> = {};
+  const token = tokenStore.get();
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  const response = await fetch(`${BASE}${path}`, {
+    method: "POST",
+    headers,
+    body: form,
+  });
+
+  const payload: unknown = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    // The import endpoints answer 200 with ok:false for validation problems, so
+    // reaching here means the request itself failed. Still, prefer the server's
+    // message when there is one.
+    const detail =
+      payload && typeof payload === "object" && "detail" in payload
+        ? String((payload as { detail: unknown }).detail)
+        : `Permintaan gagal (HTTP ${response.status}).`;
+    throw new ApiError(detail, response.status);
+  }
+
+  return payload as T;
+}
+
 export const api = {
   health: () => request<Health>("/health"),
   tiers: () => request<TierList>("/tiers"),
+
+  /**
+   * Download the whole dataset in the import format.
+   *
+   * Fetched rather than linked so the auth header is sent: a plain <a href>
+   * cannot carry a bearer token, and the endpoint requires one.
+   */
+  exportBundle: async (): Promise<void> => {
+    const headers: Record<string, string> = {};
+    const token = tokenStore.get();
+    if (token) headers.Authorization = `Bearer ${token}`;
+
+    const response = await fetch(`${BASE}/admin/export`, { headers });
+    if (!response.ok) {
+      throw new ApiError(`Ekspor gagal (HTTP ${response.status}).`, response.status);
+    }
+
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "prism-bundle.json";
+    document.body.append(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  },
+
+  importData: {
+    preview: (files: File[]) => upload<ImportResult>("/admin/import/preview", files),
+    apply: (files: File[]) => upload<ImportResult>("/admin/import", files),
+  },
 
   figures: {
     list: (params: { q?: string; bloc?: string; party?: string } = {}) =>
