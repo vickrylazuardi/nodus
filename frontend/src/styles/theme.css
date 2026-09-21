@@ -1,0 +1,152 @@
+/*
+ * Design tokens generated from DESIGN.md via:
+ *   npx @google/design.md export --format css-tailwind DESIGN.md
+ *
+ * Do not hand-edit the values below; edit DESIGN.md and re-export so the
+ * tokens and the documented rationale can never drift apart.
+ *
+ * The @import must come first: it is what generates Tailwind's utility classes
+ * and registers the cascade layers the @layer blocks below target.
+ */
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #9a6b2f;
+  --color-primary-bright: #c08a3e;
+  /* Darker bronze for TEXT. The fill bronze above is only 3.75:1 on
+     parchment, which fails WCAG AA for body text; this clears 5.49:1. */
+  --color-primary-ink: #7a5320;
+  --color-neutral: #efe6d4;
+  --color-neutral-raised: #f7f1e4;
+  --color-neutral-sunk: #e2d6be;
+  --color-ink: #1c1814;
+  --color-ink-soft: #4a4139;
+  --color-ally: #2f6b5e;
+  --color-hostile: #8c2f2a;
+  --color-secondary: #525a66;
+  --color-rule: #c9b99a;
+
+  --font-display: "Spectral", Georgia, serif;
+  --font-sans: "Inter Tight", ui-sans-serif, system-ui, sans-serif;
+
+  --radius-none: 0px;
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
+
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 40px;
+  --spacing-xxl: 64px;
+}
+
+/*
+ * Semantic layer. The @theme block above holds raw palette values; these map
+ * them to roles so components never reference a raw hex.
+ */
+:root {
+  --surface-page: var(--color-neutral);
+  --surface-raised: var(--color-neutral-raised);
+  --surface-sunk: var(--color-neutral-sunk);
+  --text-primary: var(--color-ink);
+  --text-secondary: var(--color-ink-soft);
+  --text-muted: var(--color-secondary);
+  --border-hairline: var(--color-rule);
+  --focus-ring: var(--color-primary-ink);
+  --overlay: rgb(28 24 20 / 0.55);
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--surface-page);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    font-size: 0.9375rem;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--text-primary);
+  }
+
+  /*
+   * Focus visibility is a hard requirement (antislop R-32). A two-tone ring
+   * keeps it legible on both the parchment and raised fills.
+   */
+  :focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+
+  /* Numerals in score positions must not shift width as they update. */
+  .tabular {
+    font-family: var(--font-display);
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+  }
+
+  ::selection {
+    background-color: color-mix(in srgb, var(--color-primary) 30%, transparent);
+  }
+}
+
+@layer components {
+  /*
+   * The identity motif: a hairline split at the midpoint with the filled
+   * portion extending left for hostile and right for allied. Appears in the
+   * matrix, relationship rows, and the per-issue breakdown at three sizes.
+   */
+  .score-rule {
+    position: relative;
+    height: 6px;
+    background-color: var(--surface-sunk);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+  }
+
+  .score-rule::before {
+    content: "";
+    position: absolute;
+    inset-block: 0;
+    left: 50%;
+    width: 1px;
+    background-color: color-mix(in srgb, var(--color-ink) 25%, transparent);
+    z-index: 1;
+  }
+
+  .score-rule > span {
+    position: absolute;
+    inset-block: 0;
+    border-radius: var(--radius-sm);
+  }
+}
+
+/*
+ * Motion follows the declared MOTION 2 dial: transitions and a single
+ * entrance reveal, no parallax, no looping animation.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
