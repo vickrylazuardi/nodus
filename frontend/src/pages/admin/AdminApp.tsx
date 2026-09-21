@@ -55,9 +55,16 @@ function LoginPage({ onSignIn }: { onSignIn: (username: string) => void }) {
           <div className="font-display text-[26px] font-bold tracking-[0.22em] text-primary-ink">
             PRISM
           </div>
-          <div className="text-[11px] uppercase tracking-[0.14em] text-ink-soft">
+          {/*
+           * A real <h1>, not a styled div. Every route needs a heading so the
+           * document outline has a root and a screen reader announces where it
+           * has landed. This is the same defect T1 fixed on the public routes;
+           * the admin login was missed because it renders outside that sweep.
+           * The element changes, the visual weight does not.
+           */}
+          <h1 className="text-[11px] font-normal uppercase tracking-[0.14em] text-ink-soft">
             Dashboard admin
-          </div>
+          </h1>
         </div>
 
         <p className="mb-5 text-[13px] text-ink-soft">

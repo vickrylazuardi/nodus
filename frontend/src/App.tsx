@@ -1,4 +1,5 @@
 import { NavLink, Navigate, Route, Routes } from "react-router-dom";
+import { Suspense, lazy } from "react";
 
 import { FigureDetailPage } from "@/pages/FigureDetailPage";
 import { FiguresPage } from "@/pages/FiguresPage";
@@ -7,8 +8,18 @@ import { IssuesPage } from "@/pages/IssuesPage";
 import { MapPage } from "@/pages/MapPage";
 import { MatrixPage } from "@/pages/MatrixPage";
 import { StatsPage } from "@/pages/StatsPage";
-import { AdminApp } from "@/pages/admin/AdminApp";
+import { LoadingState, Panel } from "@/components/ui";
 import { cx } from "@/lib/format";
+
+/*
+ * The admin dashboard is loaded lazily.
+ *
+ * It was previously imported at the top of this file, which meant every public
+ * visitor downloaded the whole admin bundle plus react-hook-form and zod,
+ * measured at roughly 90 KB of the main chunk, for a route most of them never
+ * open. The graph is split for the same reason; this is the same fix.
+ */
+const AdminApp = lazy(() => import("@/pages/admin/AdminApp").then((m) => ({ default: m.AdminApp })));
 
 /*
  * Every nav item maps to a route that exists. There are no placeholder links
@@ -109,7 +120,20 @@ export function App() {
           <Route path="/isu" element={<IssuesPage />} />
           <Route path="/statistik" element={<StatsPage />} />
           <Route path="/cara-baca" element={<HelpPage />} />
-          <Route path="/admin/*" element={<AdminApp />} />
+          <Route
+            path="/admin/*"
+            element={
+              <Suspense
+                fallback={
+                  <Panel>
+                    <LoadingState what="dasbor admin" />
+                  </Panel>
+                }
+              >
+                <AdminApp />
+              </Suspense>
+            }
+          />
           <Route
             path="*"
             element={
