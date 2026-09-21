@@ -334,7 +334,7 @@ export function AdminIssues() {
             }
           />
         ) : (
-          <div className="overflow-x-auto">
+          <div className="min-w-0 overflow-x-auto">
             <table className="w-full border-collapse text-[13px]">
               {/* The caption is the table's accessible name; without it a
                   screen reader announces only "table, 6 columns". */}
@@ -355,7 +355,7 @@ export function AdminIssues() {
                   ))}
                   <th
                     scope="col"
-                    className="whitespace-nowrap px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-soft"
+                    className="relative whitespace-nowrap px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-soft"
                   >
                     <span className="sr-only">Tindakan</span>
                   </th>

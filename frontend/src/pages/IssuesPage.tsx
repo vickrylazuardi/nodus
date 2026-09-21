@@ -37,7 +37,7 @@ export function IssuesPage() {
         description="Setiap relasi dinilai per isu. Bobot menentukan seberapa besar satu isu menarik skor akhir: kontribusi = skor isu × bobot. Skor isu berkisar −100 sampai +100."
       />
 
-      <div className="overflow-x-auto">
+      <div className="min-w-0 overflow-x-auto">
         <table className="w-full border-collapse text-[13px]">
           <caption className="sr-only">Daftar isu penilaian dengan bobot dan rata-rata skor.</caption>
           <thead>

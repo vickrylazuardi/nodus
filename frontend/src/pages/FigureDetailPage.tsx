@@ -346,7 +346,7 @@ export function FigureDetailPage() {
         </div>
       </Panel>
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1.65fr)_minmax(280px,0.95fr)]">
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1.65fr)_minmax(0,0.95fr)]">
         {/*
          * min-w-0 on both tracks: a grid item defaults to min-width:auto, so
          * the single-column layout below lg could not shrink past the longest

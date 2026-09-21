@@ -935,7 +935,7 @@ export function AdminRelationships() {
             action={<Button onClick={() => setQuery("")}>Hapus filter</Button>}
           />
         ) : (
-          <div className="overflow-x-auto">
+          <div className="min-w-0 overflow-x-auto">
             <table className="w-full border-collapse text-[13px]">
               <caption className="sr-only">
                 Daftar relasi antar figur dengan skor, dasar, modifier, jumlah isu, dan tingkat
@@ -956,7 +956,7 @@ export function AdminRelationships() {
                   )}
                   <th
                     scope="col"
-                    className="whitespace-nowrap px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-soft"
+                    className="relative whitespace-nowrap px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-soft"
                   >
                     <span className="sr-only">Tindakan</span>
                   </th>

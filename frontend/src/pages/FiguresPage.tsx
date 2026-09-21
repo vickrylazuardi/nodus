@@ -24,7 +24,14 @@ function FigureCard({ figure }: { figure: Figure }) {
       to={`/figur/${figure.id}`}
       className={cx(
         HIT_AREA,
-        "group flex flex-col gap-3 rounded-md border border-rule bg-neutral-raised p-4 transition-colors hover:border-primary",
+        /*
+         * min-w-0 is load-bearing: this card is a grid item, and a grid item's
+         * automatic minimum size is its content's min-content width. Without
+         * it the card could not shrink below its widest unbreakable content and
+         * measured 283px inside a 238px track, pushing /figur to 324px on a
+         * 320px viewport.
+         */
+        "group flex min-w-0 flex-col gap-3 rounded-md border border-rule bg-neutral-raised p-4 transition-colors hover:border-primary",
       )}
     >
       <div className="flex items-center gap-3">

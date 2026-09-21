@@ -40,7 +40,7 @@ export function AdminAudit() {
       {entries.length === 0 ? (
         <EmptyState title="Belum ada perubahan tercatat. Riwayat terisi begitu Anda menyimpan data." />
       ) : (
-        <div className="overflow-x-auto">
+        <div className="min-w-0 overflow-x-auto">
           <table className="w-full border-collapse text-[13px]">
             {/* The caption is the table's accessible name; without it a screen
                 reader announces only "table, 5 columns". */}

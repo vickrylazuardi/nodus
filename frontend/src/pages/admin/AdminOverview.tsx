@@ -106,7 +106,7 @@ export function AdminOverview() {
           title="Isu paling memecah"
           description="Rentang skor terlebar antar relasi. Isu seperti ini paling sering menimbulkan friksi."
         />
-        <div className="overflow-x-auto">
+        <div className="min-w-0 overflow-x-auto">
           <table className="w-full border-collapse text-[13px]">
             <caption className="sr-only">
               Isu yang paling memecah, dengan rata-rata skor, rentang, simpangan baku, dan jumlah

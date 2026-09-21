@@ -69,7 +69,14 @@ export function Panel({
   return (
     <section
       className={cx(
-        "rounded-md border border-rule p-5",
+        // min-w-0 lets a Panel shrink when it is a flex or grid item.
+        //
+        // A grid item's automatic minimum size is its content's min-content
+        // width, so without this a Panel holding a long unbroken string cannot
+        // go narrower than that string and overflows its track. Measured on
+        // /statistik at 320px: the grid track was 280px while its Panel
+        // children rendered 354px and pushed the whole document to 374px.
+        "min-w-0 rounded-md border border-rule p-5",
         sunk ? "bg-neutral-sunk" : "bg-neutral-raised",
         className,
       )}

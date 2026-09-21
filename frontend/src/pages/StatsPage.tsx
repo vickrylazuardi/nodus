@@ -59,7 +59,7 @@ export function StatsPage() {
         </dl>
       </Panel>
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(300px,1fr)]">
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
         <Panel>
           <PanelHeader
             title="Sebaran tingkat hubungan"
@@ -137,7 +137,15 @@ export function StatsPage() {
                   key={row.pair}
                   className="flex items-center justify-between gap-3 rounded-sm border border-rule px-3 py-2"
                 >
-                  <span className="truncate text-[13px]">{row.pair}</span>
+                  {/*
+                   * min-w-0 is load-bearing. A flex or grid item's automatic
+                   * minimum size is its content's min-content width, so
+                   * `truncate` alone does not let it shrink: the item stays as
+                   * wide as the longest figure name. Measured at 320px, that
+                   * forced the whole page to 374px and the panel column to
+                   * 353px inside a 280px grid.
+                   */}
+                  <span className="min-w-0 truncate text-[13px]">{row.pair}</span>
                   <ScoreValue score={row.score} color={scoreColor(row.score)} size="sm" />
                 </li>
               ))}
