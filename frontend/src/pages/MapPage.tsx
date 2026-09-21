@@ -75,7 +75,7 @@ export function MapPage() {
         />
 
         <div className="mb-4 flex flex-wrap items-center gap-x-6 gap-y-3 text-[12.5px] text-ink-soft">
-          <label className="flex items-center gap-2">
+          <label className="flex min-h-[44px] items-center gap-2">
             <span className="font-medium text-ink">Ambang skor</span>
             <input
               type="range"
@@ -84,18 +84,18 @@ export function MapPage() {
               step={5}
               value={threshold}
               onChange={(e) => setThreshold(Number(e.target.value))}
-              className="w-[130px] accent-[#9A6B2F]"
+              className="h-[44px] w-[130px] accent-[#9A6B2F]"
               aria-label="Ambang batas kekuatan relasi"
             />
             <span className="tabular w-6 text-ink">{threshold}</span>
           </label>
 
-          <label className="flex items-center gap-2">
+          <label className="flex min-h-[44px] items-center gap-2">
             <span className="font-medium text-ink">Blok</span>
             <select
               value={bloc}
               onChange={(e) => setBloc(e.target.value)}
-              className="rounded-sm border border-rule bg-neutral-raised px-2 py-1.5 text-[12.5px] text-ink"
+              className="min-h-[44px] rounded-sm border border-rule bg-neutral-raised px-2 py-1.5 text-[12.5px] text-ink"
             >
               <option value="">Semua blok</option>
               {blocs.map((b) => (
@@ -106,12 +106,18 @@ export function MapPage() {
             </select>
           </label>
 
-          <label className="flex items-center gap-2">
+          {/*
+           * The checkbox keeps its 13px visual size but gets a 44px hit area
+           * via padding on the wrapping label. A bare 13px checkbox is a real
+           * miss for a thumb, and the label already carries the text, so
+           * enlarging the label costs nothing visually.
+           */}
+          <label className="flex min-h-[44px] cursor-pointer items-center gap-2">
             <input
               type="checkbox"
               checked={showLabels}
               onChange={(e) => setShowLabels(e.target.checked)}
-              className="accent-[#9A6B2F]"
+              className="h-[18px] w-[18px] accent-[#9A6B2F]"
             />
             <span className="font-medium text-ink">Label nama</span>
           </label>

@@ -320,6 +320,12 @@ export function Field({
   );
 }
 
+/*
+ * min-h-[44px] is the touch-target floor. py-2 alone produced a 39px field,
+ * which is under the 44px minimum and was missed by the T3 sweep because that
+ * probe only checked button and a[href], never input or select. Fixing it here
+ * covers every admin form at once.
+ */
 export const inputClass =
-  "w-full rounded-sm border border-rule bg-neutral-raised px-2.5 py-2 text-[13.5px] text-ink " +
+  "min-h-[44px] w-full rounded-sm border border-rule bg-neutral-raised px-2.5 py-2 text-[13.5px] text-ink " +
   "placeholder:text-ink-soft/60 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30";
