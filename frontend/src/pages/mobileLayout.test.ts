@@ -32,6 +32,70 @@ function code(rel: string): string {
     .join("\n");
 }
 
+describe("the figure detail header stacks on a phone", () => {
+  const src = code("pages/FigureDetailPage.tsx");
+
+  it("does not let the identity block compete with the score rail for width", () => {
+    /*
+     * Measured at 390px before the fix: the name column was 47px wide and the
+     * name box inside it was 0px, so the figure's own name was invisible. The
+     * avatar is 76px and the score rail took 237px; `flex-1` on the identity
+     * block lost that contest.
+     *
+     * The fix is a single column below sm, so the two never share a row on a
+     * phone. Assert the container stacks rather than wrapping.
+     *
+     * Search from the header's own row class, not from the first `<Panel>` in
+     * the file: that one belongs to the loading state.
+     */
+    expect(src).toMatch(/flex-col gap-5 sm:flex-row/);
+    expect(src).not.toMatch(/flex flex-wrap items-start justify-between/);
+  });
+
+  it("applies the identity block's width floor only from sm up", () => {
+    /*
+     * `min-w-[280px]` is correct on desktop, where there is room beside the
+     * rail. Without a breakpoint prefix it would be a 280px hard floor on a
+     * phone whose panel only offers 240px, forcing the page sideways.
+     */
+    expect(src).toContain("lg:min-w-[280px]");
+    const bare = src.match(/(^|[" ])min-w-\[280px\]/g) ?? [];
+    expect(bare, "a 280px floor with no breakpoint prefix").toEqual([]);
+  });
+});
+
+describe("figure detail text wraps instead of clipping on a phone", () => {
+  const src = code("pages/FigureDetailPage.tsx");
+
+  it("does not truncate a counterpart name unconditionally", () => {
+    /*
+     * Measured at 320px: the name gets 123px, but Indonesian names run to
+     * 191px ("Agus Gumiwang Kartasasmita"), so `truncate` was cutting exactly
+     * the part that distinguishes similar names.
+     *
+     * Only `sm:truncate` is acceptable. A bare `truncate` on a name span is
+     * the defect, so match for the token not preceded by `sm:`.
+     */
+    const nameSpans = src.match(/text-\[14px\] font-semibold[^"]*"/g) ?? [];
+    expect(nameSpans.length).toBeGreaterThan(0);
+    for (const cls of nameSpans) {
+      const bare = cls.match(/(?<!sm:)truncate/g) ?? [];
+      expect(bare, `bare truncate on a name: ${cls}`).toEqual([]);
+    }
+    expect(src).toMatch(/sm:truncate/);
+  });
+
+  it("gives the four header stats two columns, not four, on a phone", () => {
+    /*
+     * "Pengaruh" needs 59px at 10.5px uppercase with tracking. Four columns at
+     * 320px offered 47px each and it clipped; two columns fit it.
+     */
+    const dl = src.slice(src.indexOf("<dl"), src.indexOf("</dl>"));
+    expect(dl).toMatch(/grid-cols-2/);
+    expect(dl).not.toMatch(/grid-cols-4/);
+  });
+});
+
 describe("no fixed pixel floor can force horizontal overflow", () => {
   it("uses minmax(0, ...) rather than minmax(<px>, ...) in grid tracks", () => {
     /*

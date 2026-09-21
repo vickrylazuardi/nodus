@@ -112,7 +112,7 @@ function IssueBreakdown({ relationship }: { relationship: FigureRelationship }) 
             {relationship.modifiers.map((modifier) => (
               <li
                 key={`${modifier.id}-${modifier.label}`}
-                className="flex items-start gap-3 rounded-sm border border-rule bg-neutral-sunk/60 px-3 py-2"
+                className="flex flex-wrap items-start gap-x-3 gap-y-1.5 rounded-sm border border-rule bg-neutral-sunk/60 px-3 py-2"
               >
                 <span
                   className="tabular shrink-0 text-[15px] font-semibold"
@@ -132,7 +132,15 @@ function IssueBreakdown({ relationship }: { relationship: FigureRelationship }) 
                     />
                   </span>
                 </span>
-                <span className="shrink-0 text-right text-[10.5px] leading-tight text-ink-soft">
+                {/*
+                 * The kind and expiry drop to their own line on a phone.
+                 *
+                 * Measured at 320px: this column beside the label left the label
+                 * only 66px, and a single word like "Kemenangan" needs 71px, so
+                 * event labels were clipped mid-word. Full width on a phone,
+                 * back inline from sm where there is room for three columns.
+                 */}
+                <span className="w-full text-left text-[10.5px] leading-tight text-ink-soft sm:w-auto sm:shrink-0 sm:text-right">
                   {modifier.kind}
                   {modifier.expires_at ? (
                     <>
@@ -182,10 +190,28 @@ function RelationshipRow({
               {initials(relationship.counterpart_name)}
             </span>
             <span className="min-w-0">
-              <span className="block truncate text-[14px] font-semibold">
+              {/*
+               * Names wrap on a phone and truncate only where there is room.
+               *
+               * Measured at 320px: the row offers the name 123px beside the
+               * avatar and the score chip, but Indonesian names run to 191px
+               * ("Agus Gumiwang Kartasasmita"), so `truncate` was cutting
+               * precisely the part that tells two similar names apart. The row
+               * is already around 90px tall, so a second line of name costs
+               * nothing and keeps the information.
+               */}
+              <span className="block text-[14px] font-semibold leading-snug sm:truncate">
                 {relationship.counterpart_name}
               </span>
-              <span className="block truncate text-[11.5px] text-ink-soft">
+              {/*
+               * The party and bloc wrap rather than truncate on a phone.
+               *
+               * Measured at 390px: this line needs 265px but the row only offers
+               * 193px beside the score chip, so `truncate` was hiding the bloc
+               * on 46 of 46 rows. A single line of metadata is not worth losing
+               * the information for; it wraps to two lines instead.
+               */}
+              <span className="block text-[11.5px] leading-snug text-ink-soft sm:truncate">
                 {relationship.counterpart_party ?? "–"}
                 {relationship.counterpart_bloc ? ` · ${relationship.counterpart_bloc}` : ""}
               </span>
@@ -269,16 +295,26 @@ export function FigureDetailPage() {
       </Link>
 
       <Panel>
-        <div className="flex flex-wrap items-start justify-between gap-6">
-          {/*
-           * The 280px floor keeps the name column readable beside the score
-           * rail on desktop, but it must not apply below sm: at 320px the panel
-           * only offers 240px and the floor would push the page sideways.
-           */}
-          <div className="flex min-w-0 flex-1 gap-4 sm:min-w-[280px]">
+        {/*
+         * Header layout, three states:
+         *
+         *   below sm  one column. The identity block takes the full width and
+         *             the score rail sits underneath it.
+         *   sm to lg  identity beside the rail, identity keeping a readable
+         *             floor.
+         *   lg up     the desktop arrangement.
+         *
+         * The mobile state exists because measurement at 390px showed the name
+         * column squeezed to 47px with the name box itself at 0px: the avatar
+         * is 76px, and `flex-1` on the identity block lost the space contest to
+         * the 237px score rail, so the figure's own name was invisible. Stacking
+         * removes the contest entirely rather than tuning it.
+         */}
+        <div className="flex flex-col gap-5 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between sm:gap-6">
+          <div className="flex min-w-0 flex-1 gap-4 lg:min-w-[280px]">
             <span
               aria-hidden="true"
-              className="grid h-[76px] w-[76px] shrink-0 place-items-center rounded-full border-2 border-rule bg-neutral-sunk font-display text-[25px] font-semibold text-primary-ink"
+              className="grid h-[64px] w-[64px] shrink-0 place-items-center rounded-full border-2 border-rule bg-neutral-sunk font-display text-[22px] font-semibold text-primary-ink sm:h-[76px] sm:w-[76px] sm:text-[25px]"
             >
               {initials(figure.name)}
             </span>
@@ -287,7 +323,7 @@ export function FigureDetailPage() {
              * masthead past the viewport.
              */}
             <div className="min-w-0">
-              <h1 className="text-[26px] leading-tight">{figure.name}</h1>
+              <h1 className="text-[22px] leading-tight sm:text-[26px]">{figure.name}</h1>
               {figure.full_name ? (
                 <p className="text-[12.5px] text-ink-soft">{figure.full_name}</p>
               ) : null}
@@ -303,10 +339,15 @@ export function FigureDetailPage() {
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-7">
+          {/*
+           * On a phone the rail becomes a full-width row: the average score on
+           * the left, the four counts filling the remaining width. It keeps its
+           * own row rather than competing with the name for horizontal space.
+           */}
+          <div className="flex w-full flex-wrap items-center gap-5 border-t border-rule pt-4 sm:w-auto sm:gap-7 sm:border-0 sm:pt-0">
             <div className="text-center">
               <div
-                className="tabular font-display text-[40px] font-bold leading-none"
+                className="tabular font-display text-[34px] font-bold leading-none sm:text-[40px]"
                 style={{ color: scoreColor(summary.avg_score) }}
               >
                 {summary.avg_score > 0 ? "+" : ""}
@@ -320,25 +361,46 @@ export function FigureDetailPage() {
               </div>
             </div>
 
-            <dl className="grid grid-cols-2 gap-x-6 gap-y-3">
+            {/*
+             * gap-x-2 rather than gap-x-3 on a phone: "Pengaruh" needs 59px at
+             * 10.5px uppercase with 0.06em tracking, and at 320px the two
+             * columns came to 57px each, so it clipped by 2px on figures whose
+             * score string is widest. The tighter gutter buys the difference
+             * without touching the type size or the tracking.
+             */}
+            <dl className="grid flex-1 grid-cols-2 gap-x-2 gap-y-3 sm:flex-none sm:gap-x-6">
               <div>
-                <dd className="tabular text-[19px] font-semibold">{summary.relationship_count}</dd>
+                <dd className="tabular text-[17px] font-semibold sm:text-[19px]">
+                  {summary.relationship_count}
+                </dd>
                 <dt className="text-[10.5px] uppercase tracking-[0.06em] text-ink-soft">Relasi</dt>
               </div>
               <div>
-                <dd className="tabular text-[19px] font-semibold">{figure.influence}</dd>
+                <dd className="tabular text-[17px] font-semibold sm:text-[19px]">
+                  {figure.influence}
+                </dd>
+                {/*
+                 * "Pengaruh" is the longest of the four labels: at 10.5px
+                 * uppercase with tracking it needs 59px, and a 4-column phone
+                 * grid only offered 47px, so it clipped. Two columns give it
+                 * room without shrinking the type below the legibility floor.
+                 */}
                 <dt className="text-[10.5px] uppercase tracking-[0.06em] text-ink-soft">
                   Pengaruh
                 </dt>
               </div>
               <div>
-                <dd className="tabular text-[19px] font-semibold">{summary.allies.length}</dd>
+                <dd className="tabular text-[17px] font-semibold sm:text-[19px]">
+                  {summary.allies.length}
+                </dd>
                 <dt className="text-[10.5px] uppercase tracking-[0.06em] text-ink-soft">
                   Sekutu
                 </dt>
               </div>
               <div>
-                <dd className="tabular text-[19px] font-semibold">{summary.rivals.length}</dd>
+                <dd className="tabular text-[17px] font-semibold sm:text-[19px]">
+                  {summary.rivals.length}
+                </dd>
                 <dt className="text-[10.5px] uppercase tracking-[0.06em] text-ink-soft">Rival</dt>
               </div>
             </dl>
@@ -351,8 +413,14 @@ export function FigureDetailPage() {
          * min-w-0 on both tracks: a grid item defaults to min-width:auto, so
          * the single-column layout below lg could not shrink past the longest
          * unbreakable row inside it and the page scrolled sideways at 390px.
+         *
+         * Order is swapped on mobile. The relationship list is 46 rows and
+         * measured 5751px tall in one column, so the two summary panels below
+         * it were buried under roughly six thousand pixels of scrolling. On a
+         * phone the compact overview comes first and the long list follows;
+         * from lg up the list is back on the left where it belongs.
          */}
-        <Panel className="min-w-0">
+        <Panel className="order-2 min-w-0 lg:order-1">
           <PanelHeader
             title={`Relasi (${relationships.length})`}
             description="Klik satu relasi untuk melihat rincian skor per isu, bobotnya, dan peristiwa yang memengaruhi."
@@ -372,7 +440,7 @@ export function FigureDetailPage() {
           )}
         </Panel>
 
-        <div className="flex min-w-0 flex-col gap-5">
+        <div className="order-1 flex min-w-0 flex-col gap-5 lg:order-2">
           <Panel>
             <PanelHeader
               title="Posisi per isu"

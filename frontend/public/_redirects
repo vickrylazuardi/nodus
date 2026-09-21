@@ -1,0 +1,15 @@
+# Cloudflare Pages / Netlify redirects.
+#
+# Line 1 forwards the API to the backend, so the browser stays on one origin and
+# no CORS configuration is needed. The frontend calls "/api" as a relative path
+# (frontend/src/lib/api.ts), so this is what makes production match development,
+# where vite.config.ts proxies the same path.
+#
+# Replace prism-api.onrender.com with your own backend host.
+#
+# Line 2 is the React Router fallback. Without it, opening /figur/1 directly
+# returns a 404, because the host looks for a file named figur/1 and there is
+# none. The 200 status makes it a rewrite rather than a redirect, so the URL in
+# the address bar does not change.
+/api/*  https://prism-api.onrender.com/api/:splat  200
+/*      /index.html                                200

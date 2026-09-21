@@ -227,11 +227,19 @@ describe("T2 — no element pins an unconditional pixel min-width", () => {
     renderRoute("/figur/1");
     await waitFor(() => expect(document.querySelectorAll("h1")).toHaveLength(1));
 
-    // The fix must not have removed the desktop floor — only scoped it.
+    /*
+     * The fix must not have removed the desktop floor, only scoped it.
+     *
+     * The breakpoint is `lg`, not `sm`. It started at `sm` and was moved: at
+     * 640px the wordmark, six nav links and the Admin button cannot share a row,
+     * so a single-row masthead produced a three-row 113px header in the middle
+     * of the width range. The floor follows the same breakpoint as the layout it
+     * belongs to, so this accepts either prefix rather than pinning one.
+     */
     const scoped = Array.from(document.querySelectorAll<HTMLElement>("*")).filter((el) =>
       String(el.className)
         .split(/\s+/)
-        .some((cls) => /^sm:min-w-\[[\d.]+px\]$/.test(cls)),
+        .some((cls) => /^(sm|lg):min-w-\[[\d.]+px\]$/.test(cls)),
     );
     expect(scoped.length).toBeGreaterThan(0);
   });
