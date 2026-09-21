@@ -836,7 +836,12 @@ export function AdminRelationships() {
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Filter nama…"
                 aria-label="Filter relasi"
-                className="w-[200px] rounded-sm border border-rule bg-neutral-raised px-2.5 py-2 text-[13px]"
+                className={
+                  // min-h-[44px] is the touch-target floor. This field
+                  // hand-rolls the input styles instead of using inputClass,
+                  // so it missed the shared fix and measured 38px.
+                  "min-h-[44px] w-[200px] rounded-sm border border-rule bg-neutral-raised px-2.5 py-2 text-[13px]"
+                }
               />
               <Button variant="primary" onClick={() => setCreating((v) => !v)}>
                 Relasi baru

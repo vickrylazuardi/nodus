@@ -44,13 +44,13 @@ export function AdminOverview() {
             <>
               <Link
                 to="/admin/relasi"
-                className="rounded-sm border border-primary bg-primary px-3 py-2 text-[13px] font-medium text-white hover:bg-primary-bright hover:text-ink"
+                className="inline-flex min-h-[44px] items-center rounded-sm border border-primary bg-primary px-3 py-2 text-[13px] font-medium text-white hover:bg-primary-bright hover:text-ink"
               >
                 Kelola relasi
               </Link>
               <Link
                 to="/admin/figur"
-                className="rounded-sm border border-rule px-3 py-2 text-[13px] hover:border-primary hover:text-primary-ink"
+                className="inline-flex min-h-[44px] items-center rounded-sm border border-rule px-3 py-2 text-[13px] hover:border-primary hover:text-primary-ink"
               >
                 Kelola figur
               </Link>

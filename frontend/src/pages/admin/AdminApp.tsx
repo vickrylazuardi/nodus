@@ -192,7 +192,7 @@ export function AdminApp() {
           <div className="flex items-center gap-2">
             <a
               href="/"
-              className="rounded-sm border border-rule px-2.5 py-1.5 text-[12.5px] text-ink-soft hover:border-primary hover:text-primary-ink"
+              className="inline-flex min-h-[44px] items-center rounded-sm border border-rule px-2.5 py-1.5 text-[12.5px] text-ink-soft hover:border-primary hover:text-primary-ink"
             >
               Lihat situs publik
             </a>
@@ -208,7 +208,13 @@ export function AdminApp() {
               end={item.end}
               className={({ isActive }) =>
                 cx(
-                  "rounded-sm px-3 py-1.5 text-[13.5px] transition-colors",
+                  // min-h-[44px] is the touch-target floor. py-1.5 alone gave a
+                  // 33px link, which is under the minimum and was missed because
+                  // the earlier sweep only covered the public routes.
+                  // min-w as well as min-h: the shortest label ("Isu") measured 41px
+                  // wide, so a height-only floor still leaves a target too
+                  // narrow for a thumb.
+                  "inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-sm px-3 py-1.5 text-[13.5px] transition-colors",
                   isActive
                     ? "bg-primary/10 font-semibold text-primary-ink"
                     : "text-ink-soft hover:bg-neutral-sunk hover:text-ink",
@@ -255,7 +261,7 @@ export function ConfirmDialog({
   /*
    * Focus management. Without this the dialog is announced as a modal but focus
    * stays on the page behind it, so Escape never reaches the handler below and
-   * Tab walks the page underneath — the exact trap T6 exists to remove.
+   * Tab walks the page underneath.
    *
    * The container takes focus rather than a button: `Button` in ui.tsx does not
    * forward refs, and the destructive action must never be one stray Enter
@@ -266,6 +272,86 @@ export function ConfirmDialog({
     const previouslyFocused = document.activeElement as HTMLElement | null;
     dialogRef.current?.focus();
     return () => previouslyFocused?.focus?.();
+  }, []);
+
+  /*
+   * Trap Tab inside the dialog, and hide the rest of the page from assistive
+   * technology while it is open.
+   *
+   * `aria-modal` alone is not enough: it tells a screen reader the content is
+   * modal, but the background still contains 127 focusable elements and nothing
+   * stops Tab reaching them. Measured before this was added: focus left the
+   * dialog and the page behind it stayed fully exposed.
+   *
+   * `inert` is the correct primitive. It removes the subtree from the tab order
+   * AND from the accessibility tree in one attribute, and the browser enforces
+   * it, so there is no key handling to get wrong. `aria-hidden` is set as well
+   * because older assistive technology does not honour `inert`.
+   */
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+
+    const root = document.getElementById("root");
+    // The dialog is rendered inside the app tree, so hide its siblings rather
+    // than the tree itself, which would hide the dialog too.
+    const siblings: HTMLElement[] = [];
+    let node: HTMLElement | null = dialog.parentElement;
+    while (node && node !== root?.parentElement) {
+      for (const child of Array.from(node.children)) {
+        if (child !== dialog && !child.contains(dialog) && child instanceof HTMLElement) {
+          siblings.push(child);
+        }
+      }
+      node = node.parentElement;
+    }
+
+    const touched = siblings.map((el) => ({
+      el,
+      inert: el.hasAttribute("inert"),
+      ariaHidden: el.getAttribute("aria-hidden"),
+    }));
+
+    for (const el of siblings) {
+      el.setAttribute("inert", "");
+      el.setAttribute("aria-hidden", "true");
+    }
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Tab") return;
+      const focusables = dialog.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      );
+      if (focusables.length === 0) {
+        event.preventDefault();
+        dialog.focus();
+        return;
+      }
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      if (!first || !last) return;
+
+      const active = document.activeElement;
+      // Wrap at both ends. Without this, Tab on the last control moves into the
+      // page behind the dialog.
+      if (!event.shiftKey && (active === last || !dialog.contains(active))) {
+        event.preventDefault();
+        first.focus();
+      } else if (event.shiftKey && (active === first || !dialog.contains(active))) {
+        event.preventDefault();
+        last.focus();
+      }
+    };
+
+    document.addEventListener("keydown", onKeyDown, true);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown, true);
+      for (const { el, inert, ariaHidden } of touched) {
+        if (!inert) el.removeAttribute("inert");
+        if (ariaHidden === null) el.removeAttribute("aria-hidden");
+        else el.setAttribute("aria-hidden", ariaHidden);
+      }
+    };
   }, []);
 
   return (

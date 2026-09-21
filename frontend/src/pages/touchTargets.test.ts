@@ -40,6 +40,22 @@ const TOUCH_FILES = [
   "pages/admin/AdminApp.tsx",
 ];
 
+/**
+ * Admin files with link or button rows.
+ *
+ * Added after a sweep found the admin sub-nav at 33px and the overview links at
+ * 38px. The earlier guard covered the public routes only, so the admin was
+ * never checked — the same narrow-scope mistake as the original T3 probe.
+ */
+const ADMIN_TOUCH_FILES = [
+  "pages/admin/AdminApp.tsx",
+  "pages/admin/AdminOverview.tsx",
+  "pages/admin/AdminFigures.tsx",
+  "pages/admin/AdminIssues.tsx",
+  "pages/admin/AdminRelationships.tsx",
+  "pages/admin/AdminAudit.tsx",
+];
+
 describe("touch targets", () => {
   it("gives every select a 44px minimum height", () => {
     // A bare <select> is 31px tall by default, measured in the browser.
@@ -83,5 +99,48 @@ describe("touch targets", () => {
     const links = src.match(/className=\{?\(?[^}]*\}/g) ?? [];
     const navLike = links.filter((c) => c.includes("min-h-[44px]"));
     expect(navLike.length).toBeGreaterThan(0);
+  });
+
+  it("gives every admin link a 44px minimum height", () => {
+    /*
+     * Anchors are inline by default, so `min-h` alone does nothing: the element
+     * has to be inline-flex or block for a height to apply. That is why the
+     * check is for both classes together.
+     */
+    for (const file of ADMIN_TOUCH_FILES) {
+      const src = read(file);
+      const anchors = src.match(/<Link[\s\S]*?className="([^"]*)"/g) ?? [];
+      for (const block of anchors) {
+        const classes = block.match(/className="([^"]*)"/)?.[1] ?? "";
+        // Skip decorative links that carry no target of their own.
+        if (classes.includes("underline")) continue;
+        expect(
+          classes.includes("min-h-[44px]") && /inline-flex|flex|block/.test(classes),
+          `${file}: admin link without a 44px hit area -> ${classes.slice(0, 70)}`,
+        ).toBe(true);
+      }
+    }
+  });
+
+  it("keeps the admin sub-navigation at 44px", () => {
+    /*
+     * Checks the classes that actually apply, ignoring comment lines.
+     *
+     * A regex that captured the first quoted string after `className` picked up
+     * an explanatory comment instead of the class list once one was added
+     * inside the JSX attribute. Stripping comments first is simpler and more
+     * robust than making the pattern cleverer.
+     */
+    const raw = read("pages/admin/AdminApp.tsx");
+    const src = raw
+      .split("\n")
+      .filter((line) => !line.trim().startsWith("//"))
+      .filter((line) => !line.trim().startsWith("*") && !line.trim().startsWith("/*"))
+      .join("\n");
+
+    const navBlock = src.match(/<NavLink[\s\S]{0,400}?"([^"]*min-h-\[44px\][^"]*)"/);
+    expect(navBlock, "admin NavLink with a 44px floor not found").not.toBeNull();
+    // The shortest admin label is 41px wide, so width matters as well as height.
+    expect(navBlock![1]).toContain("min-w-[44px]");
   });
 });

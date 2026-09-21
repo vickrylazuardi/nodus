@@ -30,10 +30,13 @@ scratch files that broke `npm run build`. See `05-rhf-findings.md` and
 | ID | Task | State | Evidence |
 |---|---|---|---|
 | T7 | Replace map with Cytoscape + fCoSE | **DONE** | See `09-t7-result.md`. Drag drift 0.0, 5 compound blocs, code-split |
-| T8 | shadcn/Radix primitives | **OPEN** | `@radix-ui/*` not installed |
-| T9 | TanStack Table for `/matriks` | **OPEN** | `@tanstack/react-table` not installed |
+| T8 | shadcn/Radix primitives | **DONE (no dependency needed)** | See `13-t8-result.md`. No tabs exist; native selects already accessible; the dialog's missing focus trap fixed with `inert`. |
+| T9 | TanStack Table for `/matriks` | **DONE (no library needed)** | Virtualised: 241ms -> 34ms, 3364 -> 456 DOM cells. See `11-t9-result.md`. |
 
-T9 depends on T3, which is done, so it is unblocked.
+T9's and T8's original premises were both stale — the audit findings they were
+based on had already been fixed by T3 and T5/T6. Measurement found different,
+real problems on the same surfaces, and both were fixed without adding a
+dependency. Details in the two result files.
 
 ---
 
