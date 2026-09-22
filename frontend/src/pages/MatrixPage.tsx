@@ -2,8 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 
-import { ErrorState, LoadingState, Panel, PanelHeader, ResultCount } from "@/components/ui";
-import { TierLegend } from "@/pages/MapPage";
+import { ErrorState, LoadingState, Panel, PanelHeader, ResultCount, TierLegend } from "@/components/ui";
 import { api } from "@/lib/api";
 import { formatScore, scoreColor } from "@/lib/format";
 import { indices, leadingSize, trailingSize, visibleRange } from "@/lib/virtualize";

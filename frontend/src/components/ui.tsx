@@ -147,6 +147,24 @@ export function TierChip({
   );
 }
 
+/** Tier legend. Inline tier chips with color bars, no distribution counts by default. */
+export function TierLegend({ tiers }: { tiers: Array<{ key: string; label: string; color: string }> }) {
+  return (
+    <div className={cx("flex flex-wrap gap-x-4 gap-y-2")} aria-label="Tingkat opini">
+      {tiers.map((tier) => (
+        <span className={cx("flex items-center gap-1.5 text-[11.5px] text-ink-soft")}>
+          <span
+            aria-hidden="true"
+            className="h-[3px] w-5 rounded-full"
+            style={{ backgroundColor: tier.color }}
+          />
+          {tier.label}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 export function Tag({ children }: { children: ReactNode }) {
   return (
     <span className="inline-block rounded-sm border border-rule bg-neutral-sunk px-2 py-0.5 text-[11px] text-ink-soft">
@@ -324,6 +342,100 @@ export function Field({
       {children}
       {hint ? <span className="mt-1 block text-[11.5px] text-ink-soft">{hint}</span> : null}
     </label>
+  );
+}
+
+/* ----------------------------- Compact stat row for /peta companion rail */
+
+/**
+ * One-line stat row used in the companion rail: monospace numerals on sunk parchment,
+ * no borders between rows. This is sidebar copy, not a form field.
+ */
+export function StatRow({ left, right }: { left: string | React.ReactNode; right: string | React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-between gap-2 rounded-sm bg-neutral-sunk px-3 py-2 text-[11.5px] leading-snug">
+      <span>{left}</span>
+      <span className="font-mono font-semibold">{right}</span>
+    </div>
+  );
+}
+
+/* ------------------------------ Medallion placeholder */
+
+/**
+ * Medallion: a framed letter or a portrait, nothing in between.
+ *
+ * Why this exists: 0 of 60 figures have photos yet, and inventing iconography
+ * here would violate R-04 (generic AI icons). The circle is the frame; the
+ * letters are the content. When `photo_url` arrives, the same component swaps
+ * to `<img>` without changing anything that uses it.
+ */
+
+type MedallionSize = "sm" | "md" | "lg";
+
+const SIZE_CLASS: Record<MedallionSize, { radius: string; text: string; bg: string }> = {
+  sm: { radius: "h-7 w-7", text: "text-[9px]", bg: "#EFE6D4" },
+  md: { radius: "h-12 w-12", text: "text-[13px]", bg: "#F7F1E4" },
+  lg: { radius: "h-16 w-16", text: "text-[18px]", bg: "#F7F1E4" },
+};
+
+export function Medallion({
+  name,
+  imageUrl,
+  size = "md",
+  className,
+}: {
+  name: string | null | undefined;
+  imageUrl?: string | null | undefined;
+  size?: MedallionSize;
+  className?: string;
+}) {
+  const cfg = SIZE_CLASS[size];
+  const initials =
+    name && name.trim().length > 0
+      ? name
+          .trim()
+          .split(/\s+/)
+          .slice(0, 2)
+          .map((p) => p[0] ?? "")
+          .join("")
+          .toUpperCase() || "?"
+      : "?";
+
+  if (imageUrl) {
+    return (
+      <div
+        className={cx(
+          "relative flex items-center justify-center overflow-hidden rounded-full border-2 border-rule",
+          cfg.radius,
+          className,
+        )}
+        style={{ backgroundColor: cfg.bg }}
+        aria-label="Foto figur"
+      >
+        <img
+          src={imageUrl}
+          alt={name || "Foto figur"}
+          className="h-full w-full object-cover"
+          loading="lazy"
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={cx(
+        "grid place-items-center rounded-full border-2 border-rule font-display font-semibold uppercase leading-none text-primary-ink",
+        cfg.radius,
+        cfg.text,
+        className,
+      )}
+      style={{ backgroundColor: cfg.bg }}
+      aria-label="Monogram figur"
+    >
+      {initials}
+    </div>
   );
 }
 

@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { ErrorState, LoadingState, Panel, PanelHeader, ScoreValue } from "@/components/ui";
-import { TierLegend } from "@/pages/MapPage";
+import { ErrorState, LoadingState, Panel, PanelHeader, ScoreValue, TierLegend } from "@/components/ui";
 import { api } from "@/lib/api";
 import { formatDate, scoreColor } from "@/lib/format";
 
@@ -87,7 +86,7 @@ export function StatsPage() {
             })}
           </div>
           <div className="mt-4">
-            <TierLegend tiers={tiers} distribution={stats.tier_distribution} />
+            <TierLegend tiers={tiers} />
           </div>
         </Panel>
 

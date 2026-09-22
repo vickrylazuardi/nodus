@@ -236,7 +236,7 @@ Uppercase micro-labels (`label`) are used **only** on table column heads and
 field labels, where they act as structural signage at 11px with 0.08em tracking.
 They are not used as decorative section eyebrows.
 
-## Layout
+## Layout & Components
 
 The ledger is a two-column working layout on desktop: a wide primary column for
 the current subject and a narrow rail for the score summary and tier legend.
@@ -248,6 +248,26 @@ the relationship map is a full-bleed instrument, the profile header is a compact
 masthead, and the issue breakdown is a dense ruled list. These three do not share
 a composition, and that is the point: the map, the person, and the score are
 three different kinds of information.
+
+### /peta — Two-column instrument
+
+On desktop, `/peta` splits into a 70/30 ratio:
+
+- **Primary column:** a single map canvas container (`h-[min(72vh,760px)]`) with
+  floating zoom controls in the top-right corner, a hover card bottom-right, and
+  a minimal status label bottom-left. Controls sit 12px from the edges; no padding
+  between them. The canvas border is the rule colour; background is neutral-raised.
+- **Companion rail:** compact stats row (nodes · edges), blocs count, ally/rival/
+  neutral counts, and the tier legend. Background is sunk for contrast against
+  raised panels. No hero heading beyond the page `<h1>`.
+
+At 1024px+, the companion rail sits right-aligned beside the map (flex-reverse). At
+<1024px, it collapses above the canvas, ordered first so the reader sees "how many"
+before the graph itself.
+
+The companion rail's visual language: monospace numerals at 11.5px (`text-[11.5px] font-mono`),
+tier chips inline, no borders around individual stat rows. This is a sidebar, not
+a form field, so outline-only inputs are forbidden here.
 
 ## Elevation & Depth
 
@@ -282,6 +302,12 @@ breakdown. This is the identity motif: the same mark at three zoom levels.
 - **`chip-*`** carry tier identity in lists and legends. They are filled, not
   outlined, because an outlined chip on parchment reads as a form field.
 - **`panel`** and **`panel-sunk`** are the only two surface levels.
+- **`medallion`** displays a two-letter monogram when a figure has no photo,
+  switching to `<img>` when `photo_url` is provided. No iconography is added:
+  the circle is the frame, the letters are the content (R-04).
+- **`stat-row`** compact one-line row for the companion rail, using monospace
+  numerals on sunk parchment background. This reads as sidebar copy, not form
+  fields, so no outline-only inputs here.
 
 ## Do's and Don'ts
 

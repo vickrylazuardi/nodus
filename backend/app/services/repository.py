@@ -371,7 +371,14 @@ def graph_payload(db: Session, *, threshold: int = 0, bloc: str | None = None) -
     return {
         "nodes": nodes,
         "edges": edges,
-        "counts": {"nodes": len(nodes), "edges": len(edges)},
+        "counts": {
+            "nodes": len(nodes),
+            "edges": len(edges),
+            "allies": sum(1 for e in edges if e.score >= 30),
+            "rivals": sum(1 for e in edges if e.score <= -30),
+            "neutral": sum(1 for e in edges if -30 < e.score < 30),
+            "blocs": len(set(n.bloc for n in nodes if n.bloc)),
+        },
     }
 
 

@@ -207,7 +207,14 @@ export interface GraphEdge {
 export interface GraphData {
   nodes: GraphNode[];
   edges: GraphEdge[];
-  counts: { nodes: number; edges: number };
+  counts: {
+    nodes: number;
+    edges: number;
+    allies?: number;
+    rivals?: number;
+    neutral?: number;
+    blocs?: number;
+  };
 }
 
 export interface MatrixCell {
