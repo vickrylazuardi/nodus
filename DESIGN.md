@@ -1,6 +1,6 @@
 ---
 version: alpha
-name: PRISM Diplomatic Ledger
+name: NODUS Diplomatic Ledger
 description: The diplomacy screen of Civilization VI, taken seriously as a data instrument. Aged parchment and bronze leaf for a record of power that is still being written.
 dial: ENERGY 2 / RHYTHM 3 / MOTION 2
 
@@ -160,7 +160,7 @@ components:
 
 ## Overview
 
-PRISM scores the relationships between Indonesian political figures. The subject
+NODUS scores the relationships between Indonesian political figures. The subject
 matter is a ledger of alliances, betrayals, and grudges that people argue about,
 so the interface borrows the one visual language a broad audience already reads
 as exactly that: the diplomacy screen of Civilization VI.

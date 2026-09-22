@@ -15,6 +15,7 @@ import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AdminImport } from "@/pages/admin/AdminImport";
+import { StatusProvider } from "@/pages/admin/status";
 import { api } from "@/lib/api";
 import type { ImportResult } from "@/lib/types";
 
@@ -53,11 +54,13 @@ function renderPage() {
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
   return render(
-    <QueryClientProvider client={client}>
+    <StatusProvider>
+      <QueryClientProvider client={client}>
       <MemoryRouter>
         <AdminImport />
       </MemoryRouter>
-    </QueryClientProvider>,
+    </QueryClientProvider>
+    </StatusProvider>,
   );
 }
 

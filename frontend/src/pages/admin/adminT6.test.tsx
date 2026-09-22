@@ -17,6 +17,7 @@ import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AdminAudit } from "@/pages/admin/AdminAudit";
+import { StatusProvider } from "@/pages/admin/status";
 import { AdminOverview } from "@/pages/admin/AdminOverview";
 import type { AuditEntry, Stats } from "@/lib/types";
 
@@ -92,9 +93,11 @@ function renderWithProviders(ui: React.ReactElement) {
     defaultOptions: { queries: { retry: false, staleTime: 0 } },
   });
   return render(
-    <QueryClientProvider client={client}>
+    <StatusProvider>
+      <QueryClientProvider client={client}>
       <MemoryRouter>{ui}</MemoryRouter>
-    </QueryClientProvider>,
+    </QueryClientProvider>
+    </StatusProvider>,
   );
 }
 

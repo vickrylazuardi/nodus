@@ -19,6 +19,7 @@ import { AdminIssues } from "@/pages/admin/AdminIssues";
 import { AdminRelationships } from "@/pages/admin/AdminRelationships";
 import { AdminAudit } from "@/pages/admin/AdminAudit";
 import { AdminOverview } from "@/pages/admin/AdminOverview";
+import { StatusProvider, StatusStrip } from "@/pages/admin/status";
 
 /* ------------------------------------------------------------------ session */
 
@@ -54,7 +55,7 @@ function LoginPage({ onSignIn }: { onSignIn: (username: string) => void }) {
       <Panel>
         <div className="mb-6">
           <div className="font-display text-[26px] font-bold tracking-[0.22em] text-primary-ink">
-            PRISM
+            NODUS
           </div>
           {/*
            * A real <h1>, not a styled div. Every route needs a heading so the
@@ -69,9 +70,10 @@ function LoginPage({ onSignIn }: { onSignIn: (username: string) => void }) {
         </div>
 
         <p className="mb-5 text-[13px] text-ink-soft">
-          Masuk untuk mengubah data figur, isu, skor relasi, dan peristiwa. Kredensial awal
-          dicetak oleh <code className="rounded-sm bg-neutral-sunk px-1.5 py-0.5">seed</code> saat
-          database pertama kali diisi.
+          Di sini data yang dibaca publik diisi dan diubah: figur, isu, skor relasi, dan
+          peristiwa. Kredensial awal dicetak sekali oleh{" "}
+          <code className="rounded-sm bg-neutral-sunk px-1.5 py-0.5">seed</code> saat database
+          pertama kali diisi.
         </p>
 
         <form
@@ -183,24 +185,25 @@ export function AdminApp() {
 
   return (
     <SessionContext.Provider value={session}>
-      <div className="flex flex-col gap-5">
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-rule bg-neutral-raised px-4 py-3">
-          <div>
-            <h1 className="text-[19px]">Dashboard admin</h1>
-            <p className="text-[12px] text-ink-soft">
-              Perubahan langsung tampil di antarmuka publik.
-            </p>
+      <StatusProvider>
+        <div className="flex flex-col gap-5">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-rule bg-neutral-raised px-4 py-3">
+            <div>
+              <h1 className="text-[19px]">Dashboard admin NODUS</h1>
+              <p className="text-[12px] text-ink-soft">
+                Setiap perubahan langsung tampil di antarmuka publik.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <a
+                href="/"
+                className="inline-flex min-h-[44px] items-center rounded-sm border border-rule px-2.5 py-1.5 text-[12.5px] text-ink-soft hover:border-primary hover:text-primary-ink"
+              >
+                Lihat situs publik
+              </a>
+              <Button onClick={signOut}>Keluar</Button>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <a
-              href="/"
-              className="inline-flex min-h-[44px] items-center rounded-sm border border-rule px-2.5 py-1.5 text-[12.5px] text-ink-soft hover:border-primary hover:text-primary-ink"
-            >
-              Lihat situs publik
-            </a>
-            <Button onClick={signOut}>Keluar</Button>
-          </div>
-        </div>
 
         <nav aria-label="Navigasi admin" className="flex flex-wrap gap-1 border-b border-rule pb-2">
           {ADMIN_NAV.map((item) => (
@@ -228,6 +231,17 @@ export function AdminApp() {
           ))}
         </nav>
 
+        {/*
+         * The status strip sits directly under the nav, above the routed page.
+         *
+         * Position matters: every admin page changes data, and the answer to
+         * "did that save?" has to appear where the admin is already looking,
+         * not inside the panel that just closed. One strip for the whole
+         * dashboard also means one live region, so a screen reader hears each
+         * result once instead of hunting for it.
+         */}
+        <StatusStrip />
+
         <Routes>
           <Route index element={<AdminOverview />} />
           <Route path="figur" element={<AdminFigures />} />
@@ -237,7 +251,8 @@ export function AdminApp() {
           <Route path="riwayat" element={<AdminAudit />} />
           <Route path="*" element={<Navigate to="/admin" replace />} />
         </Routes>
-      </div>
+        </div>
+      </StatusProvider>
     </SessionContext.Provider>
   );
 }

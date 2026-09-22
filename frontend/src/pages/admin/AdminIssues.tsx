@@ -16,6 +16,7 @@ import {
   inputClass,
 } from "@/components/ui";
 import { ConfirmDialog } from "@/pages/admin/AdminApp";
+import { useStatus } from "@/pages/admin/status";
 import { api } from "@/lib/api";
 import { scoreColor } from "@/lib/format";
 import type { Issue } from "@/lib/types";
@@ -92,6 +93,7 @@ function FieldError({ id, message }: { id: string; message?: string }) {
 
 function IssueEditor({ editing, onClose }: { editing: Issue | "new"; onClose: () => void }) {
   const queryClient = useQueryClient();
+  const { succeed, fail } = useStatus();
   const isNew = editing === "new";
   const summaryRef = useRef<HTMLDivElement | null>(null);
 
@@ -135,12 +137,22 @@ function IssueEditor({ editing, onClose }: { editing: Issue | "new"; onClose: ()
       } else {
         await api.issues.update(editing.id, payload);
       }
+      return payload.name;
     },
-    onSuccess: () => {
+    onSuccess: (savedName) => {
       void queryClient.invalidateQueries({ queryKey: ["issues"] });
+      succeed(
+        isNew
+          ? `Isu ${savedName} ditambahkan. Isu baru belum punya skor di relasi mana pun.`
+          : `Perubahan pada isu ${savedName} tersimpan.`,
+      );
       onClose();
     },
-    onError: (err) => setServerError((err as Error).message),
+    onError: (err) => {
+      const message = (err as Error).message;
+      setServerError(message);
+      fail("Perubahan pada isu tidak tersimpan, jadi data lama masih berlaku.", message);
+    },
   });
 
   const onSubmit = form.handleSubmit(
@@ -274,6 +286,7 @@ function IssueEditor({ editing, onClose }: { editing: Issue | "new"; onClose: ()
 
 export function AdminIssues() {
   const queryClient = useQueryClient();
+  const { succeed, fail } = useStatus();
   const [editing, setEditing] = useState<Issue | "new" | null>(null);
   const [deleting, setDeleting] = useState<Issue | null>(null);
 
@@ -284,7 +297,22 @@ export function AdminIssues() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["issues"] });
       void queryClient.invalidateQueries({ queryKey: ["relationships"] });
+      // Say how many scores went with it. An issue carries a score on every
+      // relationship that used it, so this is not a one-row deletion.
+      const name = deleting?.name ?? "Isu";
+      const used = deleting?.usage_count ?? 0;
+      succeed(
+        used > 0
+          ? `Isu ${name} dihapus, bersama skornya di ${used} relasi.`
+          : `Isu ${name} dihapus.`,
+      );
       setDeleting(null);
+    },
+    onError: (err) => {
+      fail(
+        `Isu ${deleting?.name ?? "itu"} tidak terhapus, jadi datanya masih ada.`,
+        (err as Error).message,
+      );
     },
   });
 

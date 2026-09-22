@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { Button, ErrorState, Panel, PanelHeader } from "@/components/ui";
 import { api } from "@/lib/api";
+import { useStatus } from "@/pages/admin/status";
 import { cx } from "@/lib/format";
 import type { ImportResult } from "@/lib/types";
 
@@ -147,6 +148,7 @@ function ProblemList({ result }: { result: ImportResult }) {
 
 export function AdminImport() {
   const queryClient = useQueryClient();
+  const { succeed, fail } = useStatus();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [files, setFiles] = useState<File[]>([]);
   const [preview, setPreview] = useState<ImportResult | null>(null);
@@ -162,6 +164,29 @@ export function AdminImport() {
     onSuccess: (result) => {
       setPreview(result);
       setApplied(null);
+      // The preview is a real dry run, so say what it found in the strip as
+      // well as in the panel. An admin who scrolls past the panel still learns
+      // whether the file is safe to apply.
+      if (result.ok) {
+        const total = Object.values(result.counts).reduce(
+          (sum, c) => sum + c.created + c.updated,
+          0,
+        );
+        succeed(
+          total === 0
+            ? "File terbaca, tetapi tidak ada baris yang berubah. Isinya sama dengan data sekarang."
+            : `File lolos pemeriksaan: ${total} baris akan berubah. Belum ada yang ditulis.`,
+          "Selesai diperiksa. ",
+        );
+      } else {
+        const errors = result.problems.filter((p) => p.severity === "error").length;
+        fail(
+          `${errors} kesalahan ditemukan, jadi belum ada yang ditulis. Perbaiki filenya lalu periksa lagi.`,
+        );
+      }
+    },
+    onError: (err) => {
+      fail("File tidak bisa diperiksa. Periksa koneksi lalu coba lagi.", (err as Error).message);
     },
   });
 
@@ -174,12 +199,49 @@ export function AdminImport() {
         // Figures, issues and relationships all changed, so drop the cached
         // copies rather than trying to patch them.
         void queryClient.invalidateQueries();
+        // Spell out what landed. An import touches several kinds of record at
+        // once, so a bare "done" leaves the admin counting rows by hand.
+        const parts = Object.entries(result.counts)
+          .filter(([, c]) => c.created || c.updated)
+          .map(([name, c]) => {
+            const label = COUNT_LABELS[name] ?? name;
+            const bits: string[] = [];
+            if (c.created) bits.push(`${c.created} baru`);
+            if (c.updated) bits.push(`${c.updated} diperbarui`);
+            return `${label} ${bits.join(", ")}`;
+          });
+        succeed(
+          parts.length > 0
+            ? `Impor selesai: ${parts.join(". ")}. Perubahan sudah tampil di antarmuka publik.`
+            : "Impor selesai, tetapi tidak ada baris yang berubah.",
+        );
+      } else {
+        const errors = result.problems.filter((p) => p.severity === "error").length;
+        fail(
+          `${errors} kesalahan muncul saat menerapkan, jadi tidak ada satu pun baris yang tersimpan. Data lama masih utuh.`,
+        );
       }
+    },
+    onError: (err) => {
+      fail(
+        "Impor gagal dikirim, jadi tidak ada yang tersimpan. Data lama masih utuh.",
+        (err as Error).message,
+      );
     },
   });
 
   const exportMutation = useMutation({
     mutationFn: api.exportBundle,
+    onSuccess: () => {
+      // "Tersimpan" would be a lie here: nothing was written, a file came down.
+      succeed(
+        "prism-bundle.json diunduh. Berkas ini bisa diunggah kembali tanpa mengubah data.",
+        "Terunduh. ",
+      );
+    },
+    onError: (err) => {
+      fail("Berkas tidak bisa diunduh.", (err as Error).message);
+    },
   });
 
   const onPick = (picked: FileList | null) => {

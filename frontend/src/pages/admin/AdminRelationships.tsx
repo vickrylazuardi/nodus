@@ -18,6 +18,7 @@ import {
   inputClass,
 } from "@/components/ui";
 import { ConfirmDialog } from "@/pages/admin/AdminApp";
+import { useStatus } from "@/pages/admin/status";
 import { api } from "@/lib/api";
 import { formatSigned, scoreColor, tierColor } from "@/lib/format";
 import type { Issue, Relationship } from "@/lib/types";
@@ -274,6 +275,7 @@ function ScoreEditorForm({
   const [serverError, setServerError] = useState<string | null>(null);
   const [failedAttempt, setFailedAttempt] = useState(0);
   const summaryRef = useRef<HTMLDivElement | null>(null);
+  const { succeed, fail } = useStatus();
 
   // Every validation failure re-focuses the summary, including repeated ones.
   useEffect(() => {
@@ -300,13 +302,27 @@ function ScoreEditorForm({
         weight: row.weight,
         stance: row.stance.trim() || null,
       });
+      return issues.find((i) => i.id === issueId)?.name ?? "Isu";
     },
-    onSuccess: (_data, issueId) => {
+    onSuccess: (issueName, issueId) => {
       setSavedIds((prev) => new Set(prev).add(issueId));
       setServerError(null);
       refresh();
+      // Per-row saves are the most frequent action in the admin, so each one
+      // says which issue it saved and what it now scores. "Skor isu Koalisi
+      // tersimpan: 80" answers the question without a second look.
+      const row = form.getValues(`rows.${issueId}`);
+      succeed(`Skor isu ${issueName} tersimpan: ${row.score}.`);
     },
-    onError: (err) => setServerError((err as Error).message),
+    onError: (err, issueId) => {
+      const message = (err as Error).message;
+      setServerError(message);
+      const issueName = issues.find((i) => i.id === issueId)?.name ?? "isu itu";
+      fail(
+        `Skor isu ${issueName} tidak tersimpan, jadi skor lama masih dipakai.`,
+        message,
+      );
+    },
   });
 
   const clearIssue = useMutation({
@@ -326,6 +342,20 @@ function ScoreEditorForm({
         return next;
       });
       refresh();
+      // Say what the score becomes, because clearing a row is not obviously a
+      // change to the relationship: the issue drops out of the weighted average
+      // and the score recomputes from the issues that remain.
+      succeed(
+        `Skor isu ${issue?.name ?? "itu"} dihapus. Skor relasi dihitung ulang ` +
+          `dari isu yang tersisa.`,
+      );
+    },
+    onError: (err, issueId) => {
+      const issueName = issues.find((i) => i.id === issueId)?.name ?? "isu itu";
+      fail(
+        `Skor isu ${issueName} tidak terhapus, jadi skornya masih dipakai.`,
+        (err as Error).message,
+      );
     },
   });
 
@@ -339,7 +369,7 @@ function ScoreEditorForm({
           ? `${values.expires_at}T23:59:59+00:00`
           : null,
       }),
-    onSuccess: () => {
+    onSuccess: (_data, values) => {
       modifierForm.reset({
         label: "",
         value: 0,
@@ -350,13 +380,34 @@ function ScoreEditorForm({
       });
       setServerError(null);
       refresh();
+      // Name the event and its direction. An event shifts the score, so the
+      // sign matters as much as the label.
+      const sign = values.value > 0 ? "+" : "";
+      succeed(
+        `Peristiwa "${values.label.trim()}" ditambahkan dengan bobot ${sign}${values.value}.`,
+      );
     },
-    onError: (err) => setServerError((err as Error).message),
+    onError: (err) => {
+      const message = (err as Error).message;
+      setServerError(message);
+      fail("Peristiwa tidak tersimpan, jadi skor relasi belum berubah.", message);
+    },
   });
 
   const removeModifier = useMutation({
     mutationFn: (id: number) => api.modifiers.remove(id),
-    onSuccess: refresh,
+    onSuccess: () => {
+      refresh();
+      succeed(
+        "Peristiwa dihapus. Skor relasi dihitung ulang tanpa peristiwa itu.",
+      );
+    },
+    onError: (err) => {
+      fail(
+        "Peristiwa tidak terhapus, jadi pengaruhnya masih dihitung.",
+        (err as Error).message,
+      );
+    },
   });
 
   const modifierForm = useForm<ModifierForm>({
@@ -810,6 +861,7 @@ function ScoreEditorForm({
 
 export function AdminRelationships() {
   const queryClient = useQueryClient();
+  const { succeed, fail } = useStatus();
   const [editing, setEditing] = useState<Relationship | null>(null);
   const [deleting, setDeleting] = useState<Relationship | null>(null);
   const [query, setQuery] = useState("");
@@ -860,10 +912,25 @@ export function AdminRelationships() {
         target_id: values.target_id,
         rel_type: values.rel_type,
       }),
-    onSuccess: () => {
+    onSuccess: (_data, values) => {
       void queryClient.invalidateQueries({ queryKey: ["relationships"] });
       setCreating(false);
       createForm.reset({ source_id: 0, target_id: 0, rel_type: "political" });
+      // Resolve both names, because the form carries ids and an id tells the
+      // admin nothing about what they just created.
+      const nameOf = (id: number) =>
+        (figuresQuery.data?.figures ?? []).find((f) => f.id === id)?.name ?? `#${id}`;
+      succeed(
+        `Relasi ${nameOf(values.source_id)} dan ${nameOf(values.target_id)} dibuat. ` +
+          `Skornya belum ada, jadi isinya masih nol sampai kamu menambah skor isu.`,
+      );
+    },
+    onError: (err) => {
+      // The create form stays open with its selection intact.
+      fail(
+        "Relasi tidak dibuat. Pasangan ini mungkin sudah ada, atau figur yang sama dipilih dua kali.",
+        (err as Error).message,
+      );
     },
   });
 
@@ -873,7 +940,22 @@ export function AdminRelationships() {
       void queryClient.invalidateQueries({ queryKey: ["relationships"] });
       void queryClient.invalidateQueries({ queryKey: ["figures"] });
       void queryClient.invalidateQueries({ queryKey: ["stats"] });
+      const pair = deleting
+        ? `${deleting.source_name} dan ${deleting.target_name}`
+        : "Relasi";
+      succeed(
+        `${pair} dihapus. Skor isu dan peristiwa yang menempel padanya ikut terhapus.`,
+      );
       setDeleting(null);
+    },
+    onError: (err) => {
+      const pair = deleting
+        ? `${deleting.source_name} dan ${deleting.target_name}`
+        : "Relasi";
+      fail(
+        `${pair} tidak terhapus, jadi relasinya masih ada.`,
+        (err as Error).message,
+      );
     },
   });
 

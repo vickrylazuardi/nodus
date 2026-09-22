@@ -22,6 +22,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AdminIssues } from "@/pages/admin/AdminIssues";
+import { StatusProvider } from "@/pages/admin/status";
 import type { Issue } from "@/lib/types";
 
 /* ------------------------------------------------------------------ fixtures */
@@ -110,9 +111,11 @@ function renderAdminIssues() {
     defaultOptions: { queries: { retry: false, staleTime: 0 }, mutations: { retry: false } },
   });
   return render(
-    <QueryClientProvider client={client}>
+    <StatusProvider>
+      <QueryClientProvider client={client}>
       <AdminIssues />
-    </QueryClientProvider>,
+    </QueryClientProvider>
+    </StatusProvider>,
   );
 }
 

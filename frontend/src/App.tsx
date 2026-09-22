@@ -56,10 +56,15 @@ function Masthead() {
         <NavLink to="/peta" className="flex min-h-[44px] items-center">
           <span className="flex items-baseline gap-2.5">
             <span className="font-display text-[19px] font-bold tracking-[0.22em] text-primary-ink lg:text-[21px]">
-              PRISM
+              NODUS
             </span>
+            {/*
+             * The tagline carries the mission, not the category. "Peta relasi
+             * politik" only said what the thing is, which the nav already says
+             * five times. This says why it exists.
+             */}
             <span className="hidden text-[11px] uppercase tracking-[0.14em] text-ink-soft sm:inline">
-              Peta relasi politik
+              Siapa bersekongkol dengan siapa
             </span>
           </span>
         </NavLink>
@@ -113,7 +118,19 @@ function Footer() {
   return (
     <footer className="mt-12 border-t border-rule px-5 py-6">
       <div className="mx-auto max-w-[1600px] text-[11.5px] leading-relaxed text-ink-soft">
+        {/*
+         * The mission line goes first, then the honesty line. Order matters: the
+         * reason the project exists is what a visitor came for, and the
+         * disclaimer only means something once they know why the scores exist.
+         */}
         <p>
+          <strong className="font-semibold text-ink">
+            Kekuatan yang seimbang adalah kunci.
+          </strong>{" "}
+          Supaya nepotisme bisa dikenali, aliansi harus terlihat lebih dulu. NODUS memetakan
+          siapa bersekongkol dengan siapa, seberapa kuat, dan di isu apa.
+        </p>
+        <p className="mt-2">
           <strong className="font-semibold text-ink">Skor di sini ilustratif.</strong> Angka
           dihitung dari data yang diisi admin berdasarkan dinamika yang dilaporkan publik, bukan
           pengukuran faktual dan bukan penilaian atas tokoh mana pun. Setiap skor isu menyertakan

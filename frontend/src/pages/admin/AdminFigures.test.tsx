@@ -14,6 +14,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AdminFigures } from "@/pages/admin/AdminFigures";
+import { StatusProvider } from "@/pages/admin/status";
 import type { Figure } from "@/lib/types";
 
 /* ------------------------------------------------------------------ fixtures */
@@ -113,9 +114,11 @@ function renderAdminFigures() {
     defaultOptions: { queries: { retry: false, staleTime: 0 }, mutations: { retry: false } },
   });
   return render(
-    <QueryClientProvider client={client}>
+    <StatusProvider>
+      <QueryClientProvider client={client}>
       <AdminFigures />
-    </QueryClientProvider>,
+    </QueryClientProvider>
+    </StatusProvider>,
   );
 }
 

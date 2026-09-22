@@ -1,7 +1,12 @@
-# PRISM
+# NODUS
 
 Peta relasi antar figur politik Indonesia, dengan skor per isu. Terinspirasi
 sistem opini dan diplomasi **Civilization VI**.
+
+**Kekuatan yang seimbang adalah kunci.** Supaya nepotisme bisa dikenali, aliansi
+harus terlihat lebih dulu. NODUS memetakan siapa bersekongkol dengan siapa,
+seberapa kuat, dan di isu apa. Namanya dari bahasa Latin untuk simpul tali:
+sebuah simpul yang harus diurai, sekaligus titik di jaringan.
 
 > **Skor di sini ilustratif.** Angka dihitung dari data yang diisi admin
 > berdasarkan dinamika yang dilaporkan publik. Ini bukan pengukuran faktual dan

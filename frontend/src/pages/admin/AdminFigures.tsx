@@ -16,6 +16,7 @@ import {
   inputClass,
 } from "@/components/ui";
 import { ConfirmDialog } from "@/pages/admin/AdminApp";
+import { useStatus } from "@/pages/admin/status";
 import { api } from "@/lib/api";
 import { scoreColor } from "@/lib/format";
 import type { Figure } from "@/lib/types";
@@ -115,6 +116,7 @@ function FigureEditor({
   onClose: () => void;
 }) {
   const queryClient = useQueryClient();
+  const { succeed, fail } = useStatus();
   const isNew = editing === "new";
   const summaryRef = useRef<HTMLDivElement | null>(null);
 
@@ -167,13 +169,35 @@ function FigureEditor({
       } else {
         await api.figures.update(editing.id, payload);
       }
+      // Returned so the success message can name the record. The submitted
+      // value is used rather than the prop, because a rename would otherwise
+      // report the old name.
+      return payload.name;
     },
-    onSuccess: () => {
+    onSuccess: (savedName) => {
       void queryClient.invalidateQueries({ queryKey: ["figures"] });
       void queryClient.invalidateQueries({ queryKey: ["stats"] });
+      // Name the record, not just the verb. "Tersimpan" alone still leaves the
+      // admin wondering what was saved; the figure's name closes the question.
+      succeed(
+        isNew
+          ? `Figur ${savedName} ditambahkan ke daftar.`
+          : `Perubahan pada ${savedName} tersimpan.`,
+      );
       onClose();
     },
-    onError: (err) => setServerError((err as Error).message),
+    onError: (err) => {
+      const message = (err as Error).message;
+      setServerError(message);
+      // Report it in the same place as every other result, so a failed save is
+      // as visible as a successful one. The dialog deliberately stays open with
+      // the typed values intact: closing it would discard the admin's work at
+      // the moment they need it most.
+      fail(
+        `Perubahan pada figur tidak tersimpan, jadi data lama masih berlaku.`,
+        message,
+      );
+    },
   });
 
   const onSubmit = form.handleSubmit(
@@ -349,6 +373,7 @@ function FigureEditor({
 
 export function AdminFigures() {
   const queryClient = useQueryClient();
+  const { succeed, fail } = useStatus();
   const [editing, setEditing] = useState<Figure | "new" | null>(null);
   const [deleting, setDeleting] = useState<Figure | null>(null);
   const [query, setQuery] = useState("");
@@ -361,7 +386,26 @@ export function AdminFigures() {
       void queryClient.invalidateQueries({ queryKey: ["figures"] });
       void queryClient.invalidateQueries({ queryKey: ["relationships"] });
       void queryClient.invalidateQueries({ queryKey: ["stats"] });
+      // `deleting` is still set at this point, so the name is available. Say how
+      // many relationships went with it: deleting a figure cascades, and the
+      // count is the difference between "removed a row" and "removed a row and
+      // 46 ties", which is not something to discover later.
+      const name = deleting?.name ?? "Figur";
+      const tied = deleting?.relationship_count ?? 0;
+      succeed(
+        tied > 0
+          ? `${name} dihapus, bersama ${tied} relasinya.`
+          : `${name} dihapus.`,
+      );
       setDeleting(null);
+    },
+    onError: (err) => {
+      // The dialog stays open so the admin can retry without hunting for the
+      // row again.
+      fail(
+        `${deleting?.name ?? "Figur"} tidak terhapus, jadi datanya masih ada.`,
+        (err as Error).message,
+      );
     },
   });
 

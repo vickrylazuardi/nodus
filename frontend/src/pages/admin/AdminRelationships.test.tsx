@@ -20,6 +20,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AdminRelationships } from "@/pages/admin/AdminRelationships";
+import { StatusProvider } from "@/pages/admin/status";
 import type { Issue, Relationship, Tier } from "@/lib/types";
 
 /* ------------------------------------------------------------------ fixtures */
@@ -263,9 +264,11 @@ function renderAdminRelationships() {
     defaultOptions: { queries: { retry: false, staleTime: 0 }, mutations: { retry: false } },
   });
   return render(
-    <QueryClientProvider client={client}>
+    <StatusProvider>
+      <QueryClientProvider client={client}>
       <AdminRelationships />
-    </QueryClientProvider>,
+    </QueryClientProvider>
+    </StatusProvider>,
   );
 }
 

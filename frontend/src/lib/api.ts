@@ -75,12 +75,31 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     if (token) headers.Authorization = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${BASE}${path}`, {
-    method: options.method ?? "GET",
-    headers,
-    body: options.body === undefined ? undefined : JSON.stringify(options.body),
-    signal: options.signal,
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${BASE}${path}`, {
+      method: options.method ?? "GET",
+      headers,
+      body: options.body === undefined ? undefined : JSON.stringify(options.body),
+      signal: options.signal,
+    });
+  } catch (error) {
+    /*
+     * fetch rejects with a raw browser string ("Failed to fetch", "NetworkError
+     * when attempting to fetch resource"). Those name nothing and suggest
+     * nothing, which is the lazy default R-27 exists to stop: an admin reading
+     * "Failed to fetch" cannot tell a dead server from a wrong URL from a
+     * dropped connection.
+     *
+     * An aborted request is not a failure, so it is re-thrown untouched for
+     * react-query to treat as a cancellation.
+     */
+    if (error instanceof DOMException && error.name === "AbortError") throw error;
+    throw new ApiError(
+      "Server tidak merespons. Periksa koneksi Anda, pastikan backend berjalan, lalu coba lagi.",
+      0,
+    );
+  }
 
   if (response.status === 204) return undefined as T;
 
@@ -132,11 +151,21 @@ async function upload<T>(path: string, files: File[]): Promise<T> {
   const token = tokenStore.get();
   if (token) headers.Authorization = `Bearer ${token}`;
 
-  const response = await fetch(`${BASE}${path}`, {
-    method: "POST",
-    headers,
-    body: form,
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${BASE}${path}`, {
+      method: "POST",
+      headers,
+      body: form,
+    });
+  } catch (error) {
+    // Same reasoning as `request`: a raw browser string names nothing.
+    if (error instanceof DOMException && error.name === "AbortError") throw error;
+    throw new ApiError(
+      "Unggahan tidak sampai ke server. Periksa koneksi Anda, lalu coba lagi.",
+      0,
+    );
+  }
 
   const payload: unknown = await response.json().catch(() => null);
 
