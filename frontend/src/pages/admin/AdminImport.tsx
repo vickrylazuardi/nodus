@@ -35,8 +35,24 @@ function describe(files: File[]): string {
 
 /* ------------------------------------------------------------ result display */
 
+/**
+ * Human labels for the count keys the API returns.
+ *
+ * The raw keys are database table names. A contributor reading "modifiers 4"
+ * has no way to know that means the events they just uploaded, so the table
+ * says "peristiwa" instead.
+ */
+const COUNT_LABELS: Record<string, string> = {
+  figures: "Figur",
+  issues: "Isu",
+  relationships: "Relasi",
+  modifiers: "Peristiwa",
+};
+
 function CountTable({ result }: { result: ImportResult }) {
-  const entries = Object.entries(result.counts);
+  const entries = Object.entries(result.counts).filter(
+    ([, counts]) => counts.created > 0 || counts.updated > 0,
+  );
   if (entries.length === 0) return null;
 
   return (
@@ -60,7 +76,7 @@ function CountTable({ result }: { result: ImportResult }) {
       <tbody>
         {entries.map(([name, counts]) => (
           <tr key={name} className="border-b border-rule/60 last:border-0">
-            <td className="py-1.5 pr-3 font-medium">{name}</td>
+            <td className="py-1.5 pr-3 font-medium">{COUNT_LABELS[name] ?? name}</td>
             <td className="tabular py-1.5 pr-3">{counts.created}</td>
             <td className="tabular py-1.5">{counts.updated}</td>
           </tr>

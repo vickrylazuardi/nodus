@@ -416,6 +416,7 @@ async def apply_import(
         summary = ", ".join(
             f"{name} {counts.created} baru/{counts.updated} diperbarui"
             for name, counts in totals.items()
+            if counts.created or counts.updated
         )
         repo.write_audit(
             db,

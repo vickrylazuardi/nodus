@@ -677,9 +677,44 @@ def test_csv_can_carry_events(db_session):
     assert modifier.value == 15
     assert modifier.expires_at is not None
 
+    # The event must be counted, or the preview reports "1 relationship updated"
+    # and gives no sign that the event was the actual change.
+    assert result.counts["modifiers"].created == 1
+    assert result.counts["modifiers"].updated == 0
+
     # And the row that carried it must not have altered the tie it hangs off.
     stored = db_session.scalar(select(Relationship))
     assert stored.rel_type == "coalition"
+
+
+def test_events_are_counted_separately_from_relationships(db_session):
+    """A file that only attaches an event must not read as a relationship edit.
+
+    Verified against the sample files: the preview reported "4 relationships
+    updated" and said nothing about the four events, which were the actual
+    change.
+    """
+    files = {
+        "figures.csv": "name\nAlpha\nBeta\n",
+        "relationships.csv": "source,target,rel_type\nAlpha,Beta,coalition\n",
+        "modifiers.csv": "source,target,label,value,kind\nAlpha,Beta,Event satu,10,support\n"
+        "Alpha,Beta,Event dua,-5,event\n",
+    }
+    figures, issues, relationships, problems = importer.parse_csv_files(files)
+    result = importer.run_import(
+        db_session,
+        figures=figures,
+        issues=issues,
+        relationships=relationships,
+        parse_problems=problems,
+        apply=True,
+    )
+
+    assert result.ok is True, [p.render() for p in result.problems]
+    assert result.counts["modifiers"].created == 2
+    assert result.counts["relationships"].created == 1
+    assert result.counts["relationships"].updated == 0
+    assert db_session.query(Modifier).count() == 2
 
 
 def test_modifiers_csv_is_no_longer_reported_as_unknown(db_session):

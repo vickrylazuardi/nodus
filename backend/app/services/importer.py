@@ -941,7 +941,16 @@ def apply_import(
     relationships: list[RelationshipSpec],
 ) -> dict[str, Counts]:
     """Write everything. The caller validates first and commits at the end."""
-    counts = {"figures": Counts(), "issues": Counts(), "relationships": Counts()}
+    counts = {
+        "figures": Counts(),
+        "issues": Counts(),
+        "relationships": Counts(),
+        # Events are counted separately. Without this, a file that only attaches
+        # events reported "4 relationships updated" and gave no sign that the
+        # events themselves were the change, which is misleading for the one
+        # thing a contributor most often wants to add.
+        "modifiers": Counts(),
+    }
 
     figure_by_key = {normalize_name(f.name): f for f in db.scalars(select(Figure)).all()}
     issue_by_key = {normalize_name(i.name): i for i in db.scalars(select(Issue)).all()}
@@ -1062,11 +1071,13 @@ def apply_import(
                         note=row["note"],
                     )
                 )
+                counts["modifiers"].created += 1
             else:
                 current.value = row["value"]
                 current.kind = row["kind"]
                 current.active = row["active"]
                 current.expires_at = row["expires_at"]
                 current.note = row["note"]
+                counts["modifiers"].updated += 1
 
     return counts

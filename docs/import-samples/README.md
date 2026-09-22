@@ -87,8 +87,15 @@ Sengaja dibiarkan, supaya kamu tahu ini pilihan dan bukan kelalaian:
 2. Pilih **salah satu**: `prism-update-2026-09.json`, atau kelima berkas CSV.
    Jangan mencampur keduanya dalam satu unggahan.
 3. Klik **Periksa dulu**. Tidak ada yang ditulis.
-4. Baca laporannya. Harusnya bersih, dengan angka 2 figur baru, 2 diperbarui,
-   1 isu diperbarui, 3 relasi baru, 4 diperbarui.
+4. Baca laporannya. Harusnya bersih, dengan angka:
+
+   | Jenis | Baru | Diperbarui |
+   |---|---:|---:|
+   | Figur | 2 | 2 |
+   | Isu | 0 | 1 |
+   | Relasi | 3 | 4 |
+   | Peristiwa | 4 | 0 |
+
 5. Kalau sudah yakin, klik **Terapkan**.
 
 Karena kedua format menghasilkan data yang sama, keduanya bisa dipakai untuk

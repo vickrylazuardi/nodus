@@ -232,6 +232,11 @@ setengah jadi.
 Setiap impor dicatat di `audit_log` dengan jumlah baris yang dibuat dan
 diperbarui. Lihat di **Dashboard admin > Audit**.
 
+Laporan di halaman Impor memisahkan **peristiwa** dari **relasi**. Ini penting
+karena berkas yang hanya menambahkan peristiwa tetap butuh baris relasi untuk
+menempelkannya, sehingga tanpa pemisahan itu laporannya berbunyi "4 relasi
+diperbarui" dan tidak menyebut sama sekali bahwa peristiwanya yang berubah.
+
 Skor tidak perlu diisi untuk relasi yang memakai `score_mode: "computed"`.
 Skornya dihitung dari skor per isu dan peristiwa, jadi mengisi `manual_score`
 pada mode itu tidak berpengaruh.
