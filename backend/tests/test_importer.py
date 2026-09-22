@@ -574,3 +574,121 @@ def test_empty_csv_set_is_reported_clearly(db_session):
 )
 def test_normalize_name(raw, expected):
     assert importer.normalize_name(raw) == expected
+
+
+# --------------------------------------------------------------------------- unstated fields
+
+
+def test_a_row_that_only_carries_events_does_not_change_rel_type(db_session):
+    """The CSV format needs a row per pair to attach an event.
+
+    That row has no reason to restate the relationship kind, so the column is
+    blank. It previously defaulted to "political" and then wrote that value,
+    which silently rewrote a stored `coalition` tie to `political`.
+
+    Found by applying the generated sample files to a copy of the real database
+    and diffing every relationship: exactly one pair changed, and rel_type was
+    the only field that moved.
+    """
+    db_session.add_all([Figure(name="Alpha"), Figure(name="Beta")])
+    db_session.commit()
+    alpha = db_session.scalar(select(Figure).where(Figure.name == "Alpha"))
+    beta = db_session.scalar(select(Figure).where(Figure.name == "Beta"))
+    db_session.add(
+        Relationship(source_id=alpha.id, target_id=beta.id, rel_type="coalition", since="2019")
+    )
+    db_session.commit()
+
+    files = {
+        "relationships.csv": "source,target,rel_type,status,since,notes,source_url\n"
+        "Alpha,Beta,,,,,\n"
+    }
+    figures, issues, relationships, problems = importer.parse_csv_files(files)
+    result = importer.run_import(
+        db_session,
+        figures=figures,
+        issues=issues,
+        relationships=relationships,
+        parse_problems=problems,
+        apply=True,
+    )
+
+    assert result.ok is True, [p.render() for p in result.problems]
+    stored = db_session.scalar(select(Relationship))
+    assert stored.rel_type == "coalition", "a blank rel_type must not rewrite the stored kind"
+    assert stored.since == "2019", "a blank since must not clear the stored value"
+
+
+def test_a_new_relationship_with_blank_fields_still_gets_defaults(db_session):
+    """A create must still fill in the model defaults.
+
+    Skipping unstated fields on an update must not leave a new row with NULLs
+    where the model expects a value.
+    """
+    files = {"relationships.csv": "source,target\nAlpha,Beta\n"}
+    figures, issues, relationships, problems = importer.parse_csv_files(files)
+
+    # The figures do not exist yet, so create them in the same upload.
+    files["figures.csv"] = "name\nAlpha\nBeta\n"
+    figures, issues, relationships, problems = importer.parse_csv_files(files)
+    result = importer.run_import(
+        db_session,
+        figures=figures,
+        issues=issues,
+        relationships=relationships,
+        parse_problems=problems,
+        apply=True,
+    )
+
+    assert result.ok is True, [p.render() for p in result.problems]
+    stored = db_session.scalar(select(Relationship))
+    assert stored.rel_type == "political"
+    assert stored.status == "active"
+    assert stored.score_mode == "computed"
+
+
+def test_csv_can_carry_events(db_session):
+    """modifiers.csv must actually be read.
+
+    It was not one of the recognised filenames, so a contributor's events were
+    dropped with only a "filename not recognised" warning: the JSON format
+    carried four events and the CSV format carried none, for the same data.
+    """
+    files = {
+        "figures.csv": "name\nAlpha\nBeta\n",
+        "relationships.csv": "source,target,rel_type\nAlpha,Beta,coalition\n",
+        "modifiers.csv": "source,target,label,value,kind,active,expires_at,note\n"
+        "Alpha,Beta,Peristiwa uji,15,support,true,2027-01-01T00:00:00Z,Catatan.\n",
+    }
+    figures, issues, relationships, problems = importer.parse_csv_files(files)
+    result = importer.run_import(
+        db_session,
+        figures=figures,
+        issues=issues,
+        relationships=relationships,
+        parse_problems=problems,
+        apply=True,
+    )
+
+    assert result.ok is True, [p.render() for p in result.problems]
+    modifier = db_session.scalar(select(Modifier))
+    assert modifier is not None, "the event must be created"
+    assert modifier.label == "Peristiwa uji"
+    assert modifier.value == 15
+    assert modifier.expires_at is not None
+
+    # And the row that carried it must not have altered the tie it hangs off.
+    stored = db_session.scalar(select(Relationship))
+    assert stored.rel_type == "coalition"
+
+
+def test_modifiers_csv_is_no_longer_reported_as_unknown(db_session):
+    files = {
+        "figures.csv": "name\nAlpha\n",
+        "modifiers.csv": "source,target,label,value,kind\nAlpha,Beta,Event,5,event\n",
+    }
+    _f, _i, _r, problems = importer.parse_csv_files(files)
+
+    assert not any("modifiers.csv" in p.location for p in problems), (
+        "modifiers.csv must be a recognised filename"
+    )

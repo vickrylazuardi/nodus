@@ -1,0 +1,176 @@
+{
+  "format": "prism-bundle",
+  "version": 1,
+  "figures": [
+    {
+      "name": "Anies Baswedan",
+      "role": "Mantan Gubernur DKI Jakarta",
+      "bio": "Gubernur DKI Jakarta 2017-2022. Kursi gubernur kini dipegang Pramono Anung, yang dilantik 20 Februari 2025. Anies tetap berada di peringkat atas elektabilitas capres pada survei sepanjang 2026."
+    },
+    {
+      "name": "Sri Mulyani Indrawati",
+      "role": "Ketua Independen IDA22, Bank Dunia",
+      "bio": "Menteri Keuangan 2016-2024, lalu digantikan Purbaya Yudhi Sadewa. Pada Agustus 2026 Bank Dunia menunjuknya sebagai Ketua Independen Asosiasi Pengembangan Internasional (IDA22)."
+    },
+    {
+      "name": "Suahasil Nazara",
+      "full_name": "Suahasil Nazara",
+      "role": "Menteri Keuangan",
+      "party": "Independen",
+      "bloc": "Koalisi Indonesia Maju (KIM)",
+      "region": "Nasional",
+      "influence": 66,
+      "bio": "Dilantik Presiden Prabowo sebagai Menteri Keuangan pada 14 September 2026, menggantikan Purbaya Yudhi Sadewa. Sebelumnya Wakil Menteri Keuangan. Guru besar ekonomi Universitas Indonesia.",
+      "tags": [
+        "ekonomi",
+        "fiskal"
+      ]
+    },
+    {
+      "name": "Purbaya Yudhi Sadewa",
+      "role": "Mantan Menteri Keuangan",
+      "party": "Independen",
+      "bloc": "Pendukung Pemerintahan",
+      "region": "Nasional",
+      "influence": 56,
+      "bio": "Menteri Keuangan menggantikan Sri Mulyani, lalu dicopot pada 14 September 2026 dalam reshuffle keenam dan digantikan Suahasil Nazara. Menyatakan tidak ingin kembali ke pemerintahan.",
+      "tags": [
+        "ekonomi"
+      ]
+    }
+  ],
+  "issues": [
+    {
+      "name": "Agraria & Konflik Lahan",
+      "category": "Sosial",
+      "description": "Redistribusi tanah dan penyelesaian konflik agraria. RUU Pengaturan Reforma Agraria disahkan DPR menjadi undang-undang pada 22 September 2026, mengatur hak atas tanah, penyelesaian sengketa, dan pembentukan lembaga pelaksana.",
+      "default_weight": 0.9,
+      "sort_order": 9
+    }
+  ],
+  "relationships": [
+    {
+      "source": "Prabowo Subianto",
+      "target": "Suahasil Nazara",
+      "rel_type": "coalition",
+      "status": "active",
+      "since": "2026",
+      "notes": "Presiden melantik Suahasil sebagai Menteri Keuangan pada 14 September 2026.",
+      "source_url": "https://www.antaranews.com/berita/4550000/presiden-prabowo-melantik-suahasil-nazara-jadi-menkeu",
+      "issues": [
+        {
+          "issue": "Ekonomi, APBN & Perpajakan",
+          "score": 60,
+          "weight": 1.4,
+          "stance": "Dipercaya memegang APBN setelah pergantian mendadak.",
+          "evidence_url": "https://www.kompas.com/"
+        },
+        {
+          "issue": "Koalisi & Bagi Kursi Kabinet",
+          "score": 45,
+          "weight": 1.2,
+          "stance": "Bagian dari kabinet Prabowo.",
+          "evidence_url": "https://www.antaranews.com/"
+        }
+      ]
+    },
+    {
+      "source": "Sri Mulyani Indrawati",
+      "target": "Suahasil Nazara",
+      "rel_type": "government",
+      "status": "active",
+      "since": "2016",
+      "notes": "Rekan satu kementerian sejak 2016, ketika Suahasil menjadi Kepala Badan Kebijakan Fiskal di bawah Sri Mulyani, lalu Wakil Menteri Keuangan.",
+      "issues": [
+        {
+          "issue": "Ekonomi, APBN & Perpajakan",
+          "score": 65,
+          "weight": 1.4,
+          "stance": "Kesinambungan kepemimpinan di Kementerian Keuangan.",
+          "evidence_url": "https://www.kemenkeu.go.id/"
+        }
+      ]
+    },
+    {
+      "source": "Gibran Rakabuming Raka",
+      "target": "Denny Indrayana",
+      "rel_type": "political",
+      "status": "active",
+      "since": "2026",
+      "notes": "Denny Indrayana dan pemohon lain menggugat syarat pendidikan calon wakil presiden ke Mahkamah Konstitusi pada 21 September 2026, meminta pembatalan pelantikan Gibran.",
+      "source_url": "https://tirto.id/",
+      "issues": [
+        {
+          "issue": "Demokrasi & Integritas Pemilu",
+          "score": -70,
+          "weight": 1.4,
+          "stance": "Mempersoalkan pemenuhan syarat pencalonan Gibran.",
+          "evidence_url": "https://tirto.id/"
+        },
+        {
+          "issue": "Hukum, KPK & Penegakan Hukum",
+          "score": -45,
+          "weight": 1.4,
+          "stance": "Membawa sengketa pencalonan ke jalur konstitusi.",
+          "evidence_url": "https://www.mkri.id/"
+        }
+      ]
+    },
+    {
+      "source": "Prabowo Subianto",
+      "target": "Hasto Kristiyanto",
+      "modifiers": [
+        {
+          "label": "Amnesti Presiden untuk Hasto Kristiyanto",
+          "value": 30,
+          "kind": "deal",
+          "active": true,
+          "expires_at": "2027-09-21T00:00:00Z",
+          "note": "KPK menghentikan seluruh proses hukum setelah Presiden Prabowo menerbitkan amnesti. Dibaca luas sebagai upaya merangkul PDI-P."
+        }
+      ]
+    },
+    {
+      "source": "Prabowo Subianto",
+      "target": "Nusron Wahid",
+      "modifiers": [
+        {
+          "label": "KPK usut dugaan suap di ATR/BPN",
+          "value": -16,
+          "kind": "legal",
+          "active": true,
+          "expires_at": "2027-03-19T00:00:00Z",
+          "note": "KPK menetapkan delapan tersangka dugaan korupsi hak guna bangunan pada 15 September 2026, termasuk anak buah Menteri ATR/BPN. Nusron menyatakan menghormati proses hukum."
+        }
+      ]
+    },
+    {
+      "source": "Prabowo Subianto",
+      "target": "Puan Maharani",
+      "modifiers": [
+        {
+          "label": "UU Pengaturan Reforma Agraria disahkan DPR",
+          "value": 12,
+          "kind": "support",
+          "active": true,
+          "expires_at": "2027-09-22T00:00:00Z",
+          "note": "DPR mengesahkan RUU Pengaturan Reforma Agraria menjadi undang-undang pada 22 September 2026, agenda yang didorong pemerintah."
+        }
+      ]
+    },
+    {
+      "source": "Prabowo Subianto",
+      "target": "Anies Baswedan",
+      "modifiers": [
+        {
+          "label": "Elektabilitas Anies naik di survei 2026",
+          "value": -8,
+          "kind": "event",
+          "active": true,
+          "expires_at": "2027-06-30T00:00:00Z",
+          "note": "Beberapa survei 2026 menempatkan Anies di peringkat kedua elektabilitas capres, di belakang Prabowo."
+        }
+      ]
+    }
+  ]
+}

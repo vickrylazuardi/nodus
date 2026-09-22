@@ -130,6 +130,23 @@ source,target,issue,score,weight,stance,evidence_url
 Prabowo Subianto,Gibran Rakabuming Raka,Dinasti Politik & Rekrutmen Kader,80,1.5,Satu komando.,https://contoh.go.id/bukti
 ```
 
+## modifiers.csv
+
+Peristiwa yang menggeser skor lalu memudar. Sama seperti
+`relationship_issues.csv`, kolom `source` dan `target` merujuk relasi yang sudah
+ada.
+
+```csv
+source,target,label,value,kind,active,expires_at,note
+Prabowo Subianto,Gibran Rakabuming Raka,Dukungan terbuka di rapat umum,10,support,true,2027-01-01T00:00:00Z,Mereda setelah setahun.
+```
+
+**Penting:** baris di `relationship_issues.csv` dan `modifiers.csv` hanya perlu
+mengisi `source` dan `target`. Kolom lain di file itu boleh dibiarkan kosong, dan
+kolom yang kosong **tidak akan mengubah** nilai yang sudah tersimpan. Sebelumnya
+`rel_type` yang kosong berubah menjadi `political`, sehingga satu baris peristiwa
+bisa diam-diam mengubah jenis relasi yang tersimpan.
+
 ---
 
 # Aturan yang ditegakkan

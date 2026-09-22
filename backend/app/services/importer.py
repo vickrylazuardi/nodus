@@ -241,7 +241,13 @@ def parse_csv_files(files: dict[str, str]) -> tuple[list[Row], list[Row], list[R
     issues: list[Row] = []
     relationships: list[Row] = []
 
-    known = {"figures.csv", "issues.csv", "relationships.csv", "relationship_issues.csv"}
+    known = {
+        "figures.csv",
+        "issues.csv",
+        "relationships.csv",
+        "relationship_issues.csv",
+        "modifiers.csv",
+    }
     for name in files:
         if name.casefold() not in known:
             problems.append(
@@ -276,15 +282,18 @@ def parse_csv_files(files: dict[str, str]) -> tuple[list[Row], list[Row], list[R
     issues = read("issues.csv")
     relationships = read("relationships.csv")
 
-    # relationship_issues.csv is a second pass over relationships, keyed by the
-    # pair, so it is folded into the relationship rows rather than returned.
+    # relationship_issues.csv and modifiers.csv are second passes over a pair,
+    # keyed by it, so they fold into the relationship rows rather than being
+    # returned separately. Without the modifiers pass the CSV format could not
+    # carry events at all, and a contributor's events were dropped with only a
+    # "filename not recognised" warning.
     for row in read("relationship_issues.csv"):
         relationships.append(
             Row(
                 {
                     "source": row.data.get("source"),
                     "target": row.data.get("target"),
-                    "_issues_only": True,
+                    "_auxiliary": True,
                     "issues": [
                         {
                             "issue": row.data.get("issue"),
@@ -292,6 +301,28 @@ def parse_csv_files(files: dict[str, str]) -> tuple[list[Row], list[Row], list[R
                             "weight": row.data.get("weight"),
                             "stance": row.data.get("stance"),
                             "evidence_url": row.data.get("evidence_url"),
+                        }
+                    ],
+                },
+                row.location,
+            )
+        )
+
+    for row in read("modifiers.csv"):
+        relationships.append(
+            Row(
+                {
+                    "source": row.data.get("source"),
+                    "target": row.data.get("target"),
+                    "_auxiliary": True,
+                    "modifiers": [
+                        {
+                            "label": row.data.get("label"),
+                            "value": row.data.get("value"),
+                            "kind": row.data.get("kind"),
+                            "active": row.data.get("active"),
+                            "expires_at": row.data.get("expires_at"),
+                            "note": row.data.get("note"),
                         }
                     ],
                 },
@@ -494,15 +525,18 @@ def collect_relationships(
         pair = frozenset({source_key, target_key})
         existing = by_pair.get(pair)
 
-        issues_only = bool(row.data.get("_issues_only"))
+        auxiliary = bool(row.data.get("_auxiliary"))
 
         if existing is not None:
-            # relationship_issues.csv is a second pass over the same pair, so it
-            # folds into the row that relationships.csv already created. That is
-            # the documented way to attach scores, not a duplicate.
-            if issues_only:
+            # relationship_issues.csv and modifiers.csv are second passes over
+            # the same pair, so they fold into the row that relationships.csv
+            # already created. That is the documented way to attach scores and
+            # events, not a duplicate.
+            if auxiliary:
                 for item in row.data.get("issues") or []:
                     existing.issue_rows.append(dict(item) | {"_location": row.location})
+                for item in row.data.get("modifiers") or []:
+                    existing.modifier_rows.append(dict(item) | {"_location": row.location})
                 continue
 
             # Otherwise it is a genuine duplicate. Same direction is a repeated
@@ -529,7 +563,17 @@ def collect_relationships(
                 )
             continue
 
-        rel_type = _clean(row.data.get("rel_type")) or "political"
+        # An empty rel_type on a row that already exists means "leave it alone",
+        # not "change it to political".
+        #
+        # The CSV format needs a row per pair to attach events or per-issue
+        # scores, and that row has no reason to restate the relationship kind. It
+        # previously defaulted to "political" and then wrote that value, so a
+        # file attaching one event silently rewrote a stored `coalition` tie to
+        # `political`. Verified against a copy of the real database: exactly one
+        # pair changed, and its rel_type was the only field that moved.
+        raw_rel_type = _clean(row.data.get("rel_type"))
+        rel_type = raw_rel_type or "political"
         if rel_type not in REL_TYPES:
             problems.append(
                 Problem(
@@ -563,10 +607,14 @@ def collect_relationships(
             target=target,
             location=row.location,
             fields={
-                "rel_type": rel_type,
-                "status": _clean(row.data.get("status")) or "active",
-                "score_mode": score_mode,
-                "manual_score": manual_score,
+                # `raw_rel_type` and `status` may be None, which means "not
+                # stated" rather than "empty". apply_import skips None fields on
+                # an update and falls back to the model default on a create, so a
+                # row that only carries events cannot rewrite the stored kind.
+                "rel_type": raw_rel_type,
+                "status": _clean(row.data.get("status")),
+                "score_mode": _clean(row.data.get("score_mode")),
+                "manual_score": _to_int(row.data.get("manual_score")),
                 "since": _clean(row.data.get("since")),
                 "notes": _clean(row.data.get("notes")),
                 "source_url": _clean(row.data.get("source_url")),
