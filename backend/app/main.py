@@ -29,7 +29,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="PRISM API",
+    title="NODUS API",
     description=(
         "Relationship scoring for Indonesian political figures.\n\n"
         "Scores are **illustrative estimates** derived from publicly reported "
