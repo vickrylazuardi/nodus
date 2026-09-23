@@ -11,5 +11,5 @@
 # returns a 404, because the host looks for a file named figur/1 and there is
 # none. The 200 status makes it a rewrite rather than a redirect, so the URL in
 # the address bar does not change.
-/api/*  https://prism-api.onrender.com/api/:splat  200
+/api/*  https://nodus-0qo0.onrender.com/api/:splat  200
 /*      /index.html                                200
