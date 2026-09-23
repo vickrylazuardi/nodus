@@ -65,19 +65,48 @@ Simpan hasilnya. Jangan pernah commit ke git.
 ```
 Browser
   |
-  |  https://prism.pages.dev          (Cloudflare Pages, statis)
-  |      /api/*  --> diteruskan ke backend
+  |  https://nodus.<akun>.workers.dev        (Cloudflare Workers, statis)
+  |      fetch langsung ke backend, lintas origin
+  |      (CORS, bukan proxy: Cloudflare TIDAK BISA mem-proxy ke domain luar)
   v
-https://prism-api.onrender.com        (Render, FastAPI)
+https://nodus-0qo0.onrender.com               (Render, FastAPI)
   |
   v
-postgresql://...neon.tech             (Neon, Postgres)
+postgresql://...neon.tech                     (Neon, Postgres)
 ```
 
-Frontend memanggil API lewat path relatif `/api` (`src/lib/api.ts` baris 21:
-`const BASE = "/api";`). Artinya browser selalu berada di satu origin, jadi
-**tidak perlu mengatur CORS** selama penerusan `/api/*` dikonfigurasi. Ini juga
-membuat cookie dan header berperilaku sama seperti di lokal.
+Frontend memanggil API lewat dua cara berbeda:
+
+| | Alamat API | Kenapa |
+|---|---|---|
+| Lokal | `/api` (relatif) | `vite.config.ts` mem-proxy ke `127.0.0.1:8000`, jadi browser tetap satu origin |
+| Production | URL absolut Render | Frontend dan backend beda host; browser memanggil Render langsung |
+
+Di production, alamat backend diisi lewat `VITE_API_BASE_URL` saat build
+(`frontend/src/lib/api.ts`). Vite menanam nilainya ke dalam bundle saat build,
+jadi ini **bukan** rahasia dan **wajib di-set ulang setiap kali URL backend
+berubah**, bukan sekadar di-set sekali di runtime.
+
+### Kenapa bukan proxy `/api/*`?
+
+Rencana awal panduan ini adalah meneruskan `/api/*` dari Cloudflare ke Render,
+supaya browser tetap satu origin dan CORS tidak perlu diatur. **Itu tidak
+mungkin.** Dokumentasi Cloudflare menyatakannya langsung:
+
+> "Proxying will only support relative URLs on your site. You cannot proxy
+> external domains."
+
+Build akan ditolak dengan pesan:
+
+```
+Invalid _redirects configuration:
+Line 15: Proxy (200) redirects can only point to relative paths.
+Got https://nodus-0qo0.onrender.com/api/:splat
+```
+
+Hanya Worker dengan kode (`main`) yang bisa mem-proxy ke luar platform, dan
+proyek ini tidak punya kode Worker. Karena itu rute yang benar adalah
+**panggilan lintas origin + CORS**. Langkah 2 di bawah jadi wajib, bukan opsional.
 
 ## Langkah 1: Database di Neon
 
@@ -136,16 +165,42 @@ siap memakai ulang data setiap kali deploy.
    | `PRISM_SECRET_KEY` | hasil dari langkah 2 di atas |
    | `PRISM_ENVIRONMENT` | `production` |
 
-   **Jangan** setel `PRISM_CORS_ORIGINS` kalau kamu memakai penerusan `/api/*`
-   di Langkah 3. Kalau tidak, kamu harus mengisinya dengan JSON yang valid:
+   **`PRISM_CORS_ORIGINS` wajib diisi.** Frontend (Cloudflare) dan backend
+   (Render) berbeda origin, jadi tanpa ini setiap panggilan API diblokir
+   browser dengan error CORS, meskipun `curl` terlihat baik-baik saja.
+
+   Isinya daftar JSON berisi origin frontend, **tanpa** garis miring di akhir
+   dan **tanpa** path:
 
    ```
-   PRISM_CORS_ORIGINS=["https://prism.pages.dev"]
+   PRISM_CORS_ORIGINS=["https://nodus.namamu.workers.dev"]
    ```
 
-   Nilai ini dibaca sebagai JSON oleh pydantic-settings. Menulis
-   `https://prism.pages.dev` tanpa tanda kurung siku akan membuat aplikasi
-   gagal start.
+   Menulis `https://nodus.namamu.workers.dev` tanpa tanda kurung siku akan
+   membuat aplikasi gagal start, karena pydantic-settings membaca nilainya
+   sebagai JSON. Garis miring di akhir juga membuat origin tidak cocok, karena
+   browser mengirim `Origin` tanpa garis miring.
+
+   Kalau memakai custom domain, daftarkan **keduanya** supaya preview dan
+   domain utama sama-sama jalan:
+
+   ```
+   PRISM_CORS_ORIGINS=["https://nodus.namamu.workers.dev","https://nodus.example.com"]
+   ```
+
+   Cara memastikan sudah benar, dari terminal lokal. Ganti origin di bawah
+   dengan domain Cloudflare kamu. Yang dicari adalah baris
+   `access-control-allow-origin`:
+
+   ```bash
+   curl -s -i -X OPTIONS \
+     -H "Origin: https://nodus.namamu.workers.dev" \
+     -H "Access-Control-Request-Method: GET" \
+     https://nodus-0qo0.onrender.com/api/health | grep -i "access-control-allow-origin"
+   ```
+
+   Kalau baris itu tidak muncul, CORS belum benar dan frontend akan tampil
+   kosong walau backend sehat.
 
 5. Deploy, lalu cek:
 
@@ -165,72 +220,140 @@ siap memakai ulang data setiap kali deploy.
    Perintah ini mencetak password admin yang diacak. **Catat sekarang**, karena
    hanya hash-nya yang disimpan dan password aslinya tidak bisa dipulihkan.
 
-## Langkah 3: Frontend di Cloudflare Pages
+## Langkah 3: Frontend di Cloudflare
 
-1. Daftar di <https://pages.cloudflare.com>, hubungkan GitHub.
-2. **Create application > Pages > Connect to Git**, pilih repo ini.
-3. Setelan build:
+Cloudflare punya dua produk yang mirip tapi berbeda, dan panduan ini memakai
+**Workers** (bukan Pages) karena itulah yang dipakai di lapangan: log build
+menampilkan `wrangler deploy` dan memanggil API `workers/scripts`. Bedanya
+penting:
+
+| | Workers (dipakai di sini) | Pages |
+|---|---|---|
+| SPA fallback | **harus diatur** lewat `wrangler.jsonc` | otomatis |
+| `_redirects` | dibaca, tapi hanya rule relatif | sama |
+| Konfigurasi | `wrangler.jsonc` + `assets.directory` | `pages_build_output_dir` |
+
+1. Daftar di <https://dash.cloudflare.com>, lalu **Workers & Pages > Create >
+   Workers > Connect to Git** (atau impor repo lewat alur Workers Builds).
+2. Setelan build:
 
    | Kolom | Nilai |
    |---|---|
-   | Framework preset | None |
    | Root directory | `frontend` |
    | Build command | `npm ci && npm run build` |
-   | Build output directory | `dist` |
+   | Deploy command | `npx wrangler deploy` |
    | Environment variable | `NODE_VERSION` = `20` |
+   | Environment variable | `VITE_API_BASE_URL` = `https://nodus-0qo0.onrender.com/api` |
 
-4. Tambahkan file `frontend/public/_redirects` **sebelum** build. Isinya:
+   `VITE_API_BASE_URL` **wajib**. Tanpa itu, bundle memakai `/api` relatif dan
+   request akan menabrak host statis, bukan Render. Nilai ini ditanam saat
+   build, jadi mengubahnya butuh build ulang, bukan restart.
 
+3. File `frontend/wrangler.jsonc` sudah ada di repo dan berisi:
+
+   ```jsonc
+   {
+     "name": "nodus",
+     "compatibility_date": "2026-09-23",
+     "assets": {
+       "directory": "./dist",
+       "not_found_handling": "single-page-application"
+     }
+   }
    ```
-   /api/*  https://prism-api.onrender.com/api/:splat  200
-   /*      /index.html                                200
-   ```
 
-   Baris pertama meneruskan API ke Render sehingga browser tetap di satu origin
-   dan CORS tidak diperlukan. Baris kedua penting untuk React Router: tanpa itu,
-   membuka `https://prism.pages.dev/figur/1` langsung akan menghasilkan 404,
-   karena Cloudflare akan mencari file bernama `figur/1` yang tidak ada.
+   `not_found_handling` itu yang menggantikan rule `/* /index.html 200`.
+   Tanpa itu, membuka `/figur/1` langsung akan 404. Rule `_redirects` tidak bisa
+   dipakai untuk ini karena ditolak sebagai infinite loop.
 
-   Ganti `prism-api.onrender.com` dengan domain Render kamu.
+   Sesuaikan `name` dengan nama Worker kamu.
 
-5. Deploy. Buka URL yang diberikan Cloudflare Pages.
+4. `frontend/public/_redirects` sengaja **hanya berisi komentar**. Jangan
+   menambahkan baris `200` ke sana: proxy ke domain luar akan ditolak, dan
+   `/* /index.html 200` juga ditolak.
+
+5. Deploy. Buka URL `*.workers.dev` yang diberikan Cloudflare.
+
+### Kalau memakai Cloudflare Pages
+
+Tetap bisa, dengan catatan Pages **tidak butuh** rule SPA (sudah otomatis).
+Hapus `wrangler.jsonc`, lalu:
+
+| Kolom | Nilai |
+|---|---|
+| Framework preset | None |
+| Root directory | `frontend` |
+| Build command | `npm ci && npm run build` |
+| Build output directory | `dist` |
+| Environment variable | `NODE_VERSION` = `20` |
+| Environment variable | `VITE_API_BASE_URL` = `https://nodus-0qo0.onrender.com/api` |
+
+`_redirects` tetap harus dibiarkan berisi komentar saja, dan
+`PRISM_CORS_ORIGINS` tetap wajib diisi di Render.
 
 ### Alternatif: Netlify
 
-Format `_redirects` di atas sama persis, taruh di `frontend/public/`. Setelan
-build: base `frontend`, command `npm run build`, publish `frontend/dist`.
+Netlify **bisa** mem-proxy ke domain luar, jadi di sana pendekatan satu-origin
+tetap mungkin. Tambahkan dua baris ini ke `frontend/public/_redirects`:
+
+```
+/api/*  https://nodus-0qo0.onrender.com/api/:splat  200
+/*      /index.html                                200
+```
+
+Kalau memakai cara ini, `VITE_API_BASE_URL` **tidak perlu** diisi, dan
+`PRISM_CORS_ORIGINS` juga tidak perlu diubah. Setelan build: base `frontend`,
+command `npm run build`, publish `frontend/dist`.
 
 ### Alternatif: Vercel
 
-Vercel tidak membaca `_redirects`. Buat `frontend/vercel.json`:
+Vercel juga bisa mem-proxy. Buat `frontend/vercel.json`:
 
 ```json
 {
   "rewrites": [
-    { "source": "/api/:path*", "destination": "https://prism-api.onrender.com/api/:path*" },
+    { "source": "/api/:path*", "destination": "https://nodus-0qo0.onrender.com/api/:path*" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
 ```
+
+Sama seperti Netlify, `VITE_API_BASE_URL` dan CORS tidak perlu diubah.
 
 ## Setelah deploy
 
 Periksa satu per satu, karena kegagalan yang paling umum adalah halaman tampil
 tapi datanya kosong:
 
-- [ ] `https://prism-api.onrender.com/api/health` mengembalikan JSON
-- [ ] `https://prism-api.onrender.com/api/figures` mengembalikan 58 figur
-- [ ] `https://prism-api.onrender.com/docs` menampilkan dokumentasi API
+- [ ] `https://nodus-0qo0.onrender.com/api/health` mengembalikan JSON
+- [ ] `https://nodus-0qo0.onrender.com/api/figures` mengembalikan 58 figur
+- [ ] `https://nodus-0qo0.onrender.com/api/docs` menampilkan dokumentasi API
+- [ ] **Preflight CORS dari origin frontend** mengembalikan
+      `access-control-allow-origin` (perintahnya di Langkah 2). Ini yang paling
+      sering terlewat, dan gejalanya identik dengan backend mati.
 - [ ] Situs frontend terbuka dan daftar figur terisi
 - [ ] `/peta` menampilkan 58 node
 - [ ] `/matriks` menampilkan tabel
 - [ ] `/admin` bisa login dengan password dari langkah seed
 - [ ] Refresh langsung di `/figur/1` tidak menghasilkan 404
 - [ ] `/cara-baca` memuat halaman bantuan
+- [ ] Buka DevTools > Console: tidak ada error CORS
 
-Kalau daftar figur kosong tapi `/api/health` OK, berarti `alembic upgrade head`
-atau seeding belum dijalankan. Kalau frontend terbuka tapi semua request API
-gagal dengan error jaringan, periksa `_redirects`.
+Urutan mendiagnosis kalau halaman tampil tapi kosong:
+
+1. **Console penuh error CORS** → `PRISM_CORS_ORIGINS` di Render belum memuat
+   origin Cloudflare, atau ada garis miring di akhir.
+2. **Request menuju domain Cloudflare, bukan Render** → `VITE_API_BASE_URL`
+   belum di-set saat build. Cek bundle: buka DevTools > Network, lihat URL yang
+   dipanggil. Kalau alamatnya `https://<worker>.workers.dev/api/...`, berarti
+   variabelnya kosong waktu build dan perlu deploy ulang.
+3. **Request menuju Render tapi 404 di `/api/...`** → path di
+   `VITE_API_BASE_URL` salah. Nilainya harus diakhiri `/api`.
+4. **Refresh di `/figur/1` menghasilkan 404** → `not_found_handling` belum
+   terpasang, atau `wrangler.jsonc` tidak terbaca. Pastikan file itu ada di
+   root `frontend/`, bukan di root repo.
+5. **Daftar figur kosong tapi `/api/health` OK** → `alembic upgrade head` atau
+   seeding belum dijalankan.
 
 ## Memperbarui data di production
 

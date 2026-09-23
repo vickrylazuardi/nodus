@@ -1,0 +1,28 @@
+{
+  /**
+   * Cloudflare Workers static assets.
+   *
+   * This project deploys as a Worker with static assets, NOT as a Pages
+   * project. The two look similar from the dashboard but differ in ways that
+   * broke a deploy:
+   *
+   *   - Workers does NOT serve index.html for unmatched routes by default the
+   *     way Pages does. Without `not_found_handling` below, opening
+   *     /figur/1 directly returns a 404 and only the site root works.
+   *   - The `/* /index.html 200` rule that fixes this on Netlify is REJECTED
+   *     here as an infinite loop, so it cannot be used as a substitute.
+   *
+   * `directory` is relative to this file. The Workers Builds settings point at
+   * the `frontend` root with build command `npm ci && npm run build`, so the
+   * Vite output lands in ./dist.
+   *
+   * There is no `main`, so this is an assets-only Worker. Do not add a
+   * `binding: "ASSETS"` field: it is only valid alongside a Worker script.
+   */
+  "name": "nodus",
+  "compatibility_date": "2026-09-23",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application"
+  }
+}

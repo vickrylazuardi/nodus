@@ -1,15 +1,32 @@
-# Cloudflare Pages / Netlify redirects.
+# Cloudflare redirects.
 #
-# Line 1 forwards the API to the backend, so the browser stays on one origin and
-# no CORS configuration is needed. The frontend calls "/api" as a relative path
-# (frontend/src/lib/api.ts), so this is what makes production match development,
-# where vite.config.ts proxies the same path.
+# This file is deliberately comments-only, and that is not an oversight.
 #
-# Replace prism-api.onrender.com with your own backend host.
+# What used to be here, and why both lines had to go:
 #
-# Line 2 is the React Router fallback. Without it, opening /figur/1 directly
-# returns a 404, because the host looks for a file named figur/1 and there is
-# none. The 200 status makes it a rewrite rather than a redirect, so the URL in
-# the address bar does not change.
-/api/*  https://nodus-0qo0.onrender.com/api/:splat  200
-/*      /index.html                                200
+#   /api/*  https://<backend>/api/:splat  200     <- REJECTED
+#   /*      /index.html                   200     <- REJECTED
+#
+# 1. Cloudflare cannot proxy to an external host. A 200 rewrite may only point
+#    at a relative path, so the deploy fails with:
+#      "Proxy (200) redirects can only point to relative paths.
+#       Got https://<backend>/api/:splat"
+#    The docs are explicit: "Proxying will only support relative URLs on your
+#    site. You cannot proxy external domains." Only a Cloudflare Worker script
+#    can proxy off-platform, and this project has no Worker script.
+#
+#    So the browser calls the backend directly and the backend allows this
+#    origin through CORS. See docs/DEPLOY.md.
+#
+# 2. `/* /index.html 200` is rejected as an infinite loop:
+#      "Infinite loop detected in this rule. This would cause a redirect to
+#       strip `.html` or `/index` and end up triggering this rule again."
+#    SPA routing is configured in wrangler.jsonc instead, via
+#    assets.not_found_handling = "single-page-application". That is the
+#    supported mechanism on Workers; without it, deep links like /figur/1 404.
+#
+# If you deploy to Netlify instead, add this one line back:
+#
+#   /*  /index.html  200
+#
+# Do NOT add the /api/* proxy line back on Cloudflare. It cannot work.

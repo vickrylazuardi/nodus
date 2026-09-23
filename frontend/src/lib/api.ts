@@ -21,7 +21,30 @@ import type {
   Token,
 } from "./types";
 
-const BASE = "/api";
+/**
+ * Where the API lives.
+ *
+ * In development this stays "/api" and vite.config.ts proxies it to the local
+ * backend, so the browser sits on one origin and no CORS is involved.
+ *
+ * In production the frontend and backend are on different hosts (Pages and
+ * Render). Cloudflare Pages CANNOT proxy /api/* to another host: a 200-rewrite
+ * in `_redirects` may only point at a relative path, and the build is rejected
+ * with "Proxy (200) redirects can only point to relative paths". So the browser
+ * calls the backend directly and the backend allows this origin via CORS.
+ *
+ * VITE_API_BASE_URL is inlined at BUILD time, not read at runtime, so it must be
+ * set as a build environment variable on the host, not as a secret.
+ */
+export function resolveApiBase(raw: string | undefined): string {
+  const value = (raw ?? "").trim();
+  if (!value) return "/api";
+  // A trailing slash would produce "//figures". Both spellings are common, so
+  // accept either instead of failing with a doubled slash.
+  return value.replace(/\/+$/, "");
+}
+
+const BASE = resolveApiBase(import.meta.env.VITE_API_BASE_URL);
 const TOKEN_KEY = "prism.token";
 
 export class ApiError extends Error {
