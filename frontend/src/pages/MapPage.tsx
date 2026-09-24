@@ -120,7 +120,7 @@ export function MapPage() {
                 step={5}
                 value={threshold}
                 onChange={(e) => setThreshold(Number(e.target.value))}
-                className="h-[44px] w-[130px] accent-[#9A6B2F]"
+                className="h-[44px] w-[130px] accent-primary"
                 aria-label="Ambang batas kekuatan relasi"
               />
               <span className="tabular w-6 text-ink">{threshold}</span>
@@ -131,7 +131,7 @@ export function MapPage() {
               <select
                 value={bloc}
                 onChange={(e) => setBloc(e.target.value)}
-                className="min-h-[44px] rounded-sm border border-rule bg-neutral-raised px-2 py-1.5 text-[12.5px] text-ink"
+                className="min-h-[44px] rounded-sm border border-control-border bg-neutral-raised px-2 py-1.5 text-[12.5px] text-ink"
               >
                 <option value="">Semua blok</option>
                 {blocs.map((b) => (
@@ -147,7 +147,7 @@ export function MapPage() {
                 type="checkbox"
                 checked={showLabels}
                 onChange={(e) => setShowLabels(e.target.checked)}
-                className="h-[18px] w-[18px] accent-[#9A6B2F]"
+                className="h-[18px] w-[18px] accent-primary"
                 aria-label="Tampilkan label nama"
               />
               <span className="font-medium text-ink">Label nama</span>
@@ -163,7 +163,7 @@ export function MapPage() {
               </p>
               <button
                 type="button"
-                className="mt-4 min-h-[44px] rounded-sm border border-rule bg-neutral-raised px-4 py-2 text-[13px] font-medium text-ink transition-colors hover:border-primary hover:bg-neutral-sunk"
+                className="mt-4 min-h-[44px] rounded-sm border border-control-border bg-neutral-raised px-4 py-2 text-[13px] font-medium text-ink transition-colors hover:border-primary hover:bg-neutral-sunk"
                 onClick={() => setThreshold(0)}
               >
                 Reset ambang
@@ -173,19 +173,64 @@ export function MapPage() {
             <RelationshipGraph data={graph} onSelect={onSelect} showLabels={showLabels} />
           )}
 
-          {/* Legend row at bottom of panel */}
-          <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2">
-            <div aria-label="Tingkat opini" className="flex flex-wrap gap-x-4 gap-y-2">
-              {tiers.map((tier) => (
-                <span key={tier.key} className="flex items-center gap-1.5 text-[11.5px] text-ink-soft">
+          {/*
+            Legend and keys.
+
+            The audit found two gaps here. First, node size encodes influence
+            and nothing on the page said so, which is a fundamental omission in
+            a network tool: an unexplained encoding is a defect. Second, the
+            tier legend showed flat colour bars, so it did not convey that the
+            ramp's intensity is part of the encoding.
+
+            The legend now shows each tier at its true fill with the size key
+            beside it, so both visual variables are documented where the map is.
+          */}
+          <div className="mt-4 flex flex-wrap items-start gap-x-8 gap-y-4">
+            <div aria-label="Tingkat opini" className="min-w-0">
+              <div className="mb-2 text-[12px] font-semibold uppercase tracking-[0.06em] text-ink-muted">
+                Tingkat hubungan
+              </div>
+              <div className="flex flex-wrap gap-x-3 gap-y-2">
+                {tiers.map((tier) => (
+                  <span
+                    key={tier.key}
+                    className="flex items-center gap-1.5 text-[11.5px] text-ink-soft"
+                  >
+                    <span
+                      aria-hidden="true"
+                      className="tier-fill h-[10px] w-[18px] rounded-sm"
+                      style={{ backgroundColor: tier.color }}
+                    />
+                    {tier.label}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/*
+              The size key. Two dots at the ends of the influence range, labelled,
+              because a size encoding with no key is guesswork.
+            */}
+            <div className="min-w-0">
+              <div className="mb-2 text-[12px] font-semibold uppercase tracking-[0.06em] text-ink-muted">
+                Ukuran simpul
+              </div>
+              <div className="flex items-end gap-3 text-[11.5px] text-ink-soft">
+                <span className="flex items-center gap-1.5">
                   <span
                     aria-hidden="true"
-                    className="h-[3px] w-5 rounded-full"
-                    style={{ backgroundColor: tier.color }}
+                    className="inline-block h-[10px] w-[10px] rounded-full border border-rule-strong bg-neutral-sunk"
                   />
-                  {tier.label}
+                  pengaruh rendah
                 </span>
-              ))}
+                <span className="flex items-center gap-1.5">
+                  <span
+                    aria-hidden="true"
+                    className="inline-block h-[18px] w-[18px] rounded-full border border-rule-strong bg-neutral-sunk"
+                  />
+                  pengaruh tinggi
+                </span>
+              </div>
             </div>
           </div>
         </Panel>
@@ -225,7 +270,7 @@ function ErrorState({ message, onRetry }: { message: string; onRetry?: () => voi
       {onRetry ? (
         <button
           type="button"
-          className="mt-3 min-h-[44px] rounded-sm border border-rule bg-neutral-raised px-4 py-2 text-[13px] font-medium text-ink transition-colors hover:border-primary hover:bg-neutral-sunk"
+          className="mt-3 min-h-[44px] rounded-sm border border-control-border bg-neutral-raised px-4 py-2 text-[13px] font-medium text-ink transition-colors hover:border-primary hover:bg-neutral-sunk"
           onClick={onRetry}
         >
           Coba lagi

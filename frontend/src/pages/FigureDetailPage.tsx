@@ -9,12 +9,21 @@ import {
   Panel,
   PanelHeader,
   ScoreRule,
+  ScoreScale,
   ScoreValue,
   Tag,
   TierChip,
 } from "@/components/ui";
 import { api } from "@/lib/api";
-import { formatDate, formatSigned, initials, scoreColor, tierColor } from "@/lib/format";
+import {
+  formatDate,
+  formatSigned,
+  initials,
+  relTypeLabel,
+  scoreBarColor,
+  scoreTextColor,
+  tierColor,
+} from "@/lib/format";
 import type { FigureRelationship } from "@/lib/types";
 
 function IssueBreakdown({ relationship }: { relationship: FigureRelationship }) {
@@ -37,7 +46,7 @@ function IssueBreakdown({ relationship }: { relationship: FigureRelationship }) 
           Total:{" "}
           <strong
             className="tabular font-semibold"
-            style={{ color: scoreColor(relationship.score) }}
+            style={{ color: scoreTextColor(relationship.score) }}
           >
             {relationship.score > 0 ? "+" : ""}
             {relationship.score}
@@ -63,12 +72,12 @@ function IssueBreakdown({ relationship }: { relationship: FigureRelationship }) 
           >
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <span className="text-[13px] font-semibold">{issue.issue}</span>
-              <ScoreValue score={issue.score} color={scoreColor(issue.score)} size="sm" />
+              <ScoreValue score={issue.score} color={scoreTextColor(issue.score)} size="sm" />
             </div>
             <div className="mt-2">
               <ScoreRule
                 score={issue.score}
-                color={scoreColor(issue.score)}
+                color={scoreBarColor(issue.score)}
                 height={4}
                 label={`${issue.issue}: ${issue.score}`}
               />
@@ -116,7 +125,7 @@ function IssueBreakdown({ relationship }: { relationship: FigureRelationship }) 
               >
                 <span
                   className="tabular shrink-0 text-[15px] font-semibold"
-                  style={{ color: scoreColor(modifier.value) }}
+                  style={{ color: scoreTextColor(modifier.value) }}
                 >
                   {formatSigned(modifier.value, 0)}
                 </span>
@@ -171,7 +180,10 @@ function RelationshipRow({
   figureName: string;
 }) {
   const [open, setOpen] = useState(false);
-  const color = scoreColor(relationship.score);
+  /* The numeral is TYPE and needs the theme-aware ladder. */
+  const textColor = scoreTextColor(relationship.score);
+  /* The bar sits on the track, so it needs the per-theme bar role. */
+  const barColor = scoreBarColor(relationship.score);
 
   return (
     <li className="rounded-md border border-rule bg-neutral-raised">
@@ -217,21 +229,37 @@ function RelationshipRow({
               </span>
             </span>
           </span>
-          <ScoreValue score={relationship.score} color={color} size="md" />
+          <TierChip label={relationship.tier.label} color={tierColor(relationship.tier)} />
         </div>
 
-        <div className="mt-2.5">
+        {/*
+          The numeral sits at the end of its own bar, on the same line.
+          Previously the score was right-aligned in the row above while the bar
+          spanned the full width below it, so the eye could not associate the two
+          without effort, and four clustered values (+94, +93, +90, +88) drew
+          four visually identical bars. Pairing them, and ticking the axis, is
+          what turns the bar from decoration into a measurement.
+        */}
+        <div className="mt-2.5 flex items-center gap-3">
+          <span className="tabular shrink-0 text-[15px] font-semibold" style={{ color: textColor }}>
+            {relationship.score > 0 ? "+" : ""}
+            {relationship.score}
+          </span>
           <ScoreRule
             score={relationship.score}
-            color={color}
-            label={`${figureName} dan ${relationship.counterpart_name}: ${relationship.score}`}
+            color={barColor}
+            height={8}
+            ticks
+            className="flex-1"
+            label={`${figureName} dan ${relationship.counterpart_name}: ${relationship.score} dari rentang -100 sampai +100`}
           />
         </div>
 
         <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2">
-          <TierChip label={relationship.tier.label} color={tierColor(relationship.tier)} />
           <span className="text-[11.5px] text-ink-soft">
-            {relationship.issues.length} isu · {relationship.rel_type} ·{" "}
+            {relationship.issues.length} isu · {relTypeLabel(relationship.rel_type)}
+          </span>
+          <span className="text-[11.5px] font-medium text-primary-ink">
             {open ? "tutup rincian" : "lihat rincian"}
           </span>
         </div>
@@ -345,20 +373,30 @@ export function FigureDetailPage() {
            * own row rather than competing with the name for horizontal space.
            */}
           <div className="flex w-full flex-wrap items-center gap-5 border-t border-rule pt-4 sm:w-auto sm:gap-7 sm:border-0 sm:pt-0">
-            <div className="text-center">
-              <div
-                className="tabular font-display text-[34px] font-bold leading-none sm:text-[40px]"
-                style={{ color: scoreColor(summary.avg_score) }}
-              >
-                {summary.avg_score > 0 ? "+" : ""}
-                {summary.avg_score}
+            {/*
+              The hero score is a scale, not a bare numeral.
+              The previous pass set +36 as the largest, boldest thing on the page
+              with only the word "Rata-rata" beneath it, so a first-time reader
+              could not tell what it measured, what range it sat on, or whether
+              +36 was strong. The visual audit called this the most serious
+              information-design failure on the page. It now carries its tier,
+              its ±100 axis, and its zero.
+            */}
+            <div className="w-full max-w-[280px] sm:w-[260px]">
+              <div className="mb-1 text-[11px] uppercase tracking-[0.06em] text-ink-muted">
+                Rata-rata relasi
               </div>
-              <div className="mt-1 text-[11px] uppercase tracking-[0.08em] text-ink-soft">
-                Rata-rata
-              </div>
-              <div className="mt-1.5">
-                <TierChip label={tier.label} color={tierColor(tier)} />
-              </div>
+              <ScoreScale
+                score={summary.avg_score}
+                color={scoreTextColor(summary.avg_score)}
+                tierLabel={tier.label}
+                size="md"
+                ticks={[
+                  { score: -100, label: "−100" },
+                  { score: 0, label: "0" },
+                  { score: 100, label: "+100" },
+                ]}
+              />
             </div>
 
             {/*
@@ -373,27 +411,31 @@ export function FigureDetailPage() {
                 <dd className="tabular text-[17px] font-semibold sm:text-[19px]">
                   {summary.relationship_count}
                 </dd>
-                <dt className="text-[10.5px] uppercase tracking-[0.06em] text-ink-soft">Relasi</dt>
+                <dt className="text-[12px] uppercase tracking-[0.06em] text-ink-muted">Relasi</dt>
               </div>
               <div>
                 <dd className="tabular text-[17px] font-semibold sm:text-[19px]">
                   {figure.influence}
                 </dd>
                 {/*
-                 * "Pengaruh" is the longest of the four labels: at 10.5px
-                 * uppercase with tracking it needs 59px, and a 4-column phone
-                 * grid only offered 47px, so it clipped. Two columns give it
-                 * room without shrinking the type below the legibility floor.
+                 * "Pengaruh" is the longest of the four labels: at 12px
+                 * uppercase with tracking it needs more room than a 4-column
+                 * phone grid offers, so it clipped. Two columns give it room
+                 * without shrinking the type below the legibility floor.
+                 *
+                 * The scale is stated because the number is meaningless without
+                 * it: the audit found "98" sitting in a grid of counts with no
+                 * indication that it is an index out of 100, not a count.
                  */}
-                <dt className="text-[10.5px] uppercase tracking-[0.06em] text-ink-soft">
-                  Pengaruh
+                <dt className="text-[12px] uppercase tracking-[0.06em] text-ink-muted">
+                  Pengaruh <span className="normal-case tracking-normal">/100</span>
                 </dt>
               </div>
               <div>
                 <dd className="tabular text-[17px] font-semibold sm:text-[19px]">
                   {summary.allies.length}
                 </dd>
-                <dt className="text-[10.5px] uppercase tracking-[0.06em] text-ink-soft">
+                <dt className="text-[12px] uppercase tracking-[0.06em] text-ink-muted">
                   Sekutu
                 </dt>
               </div>
@@ -401,9 +443,27 @@ export function FigureDetailPage() {
                 <dd className="tabular text-[17px] font-semibold sm:text-[19px]">
                   {summary.rivals.length}
                 </dd>
-                <dt className="text-[10.5px] uppercase tracking-[0.06em] text-ink-soft">Rival</dt>
+                <dt className="text-[12px] uppercase tracking-[0.06em] text-ink-muted">Rival</dt>
               </div>
             </dl>
+
+            {/*
+              The two buckets do not sum to the relationship count: allies are
+              scored at or above the friendly threshold and rivals at or below
+              the wary one, so a figure with 47 relations can have 32 allies and
+              11 rivals and still leave 4 in the neutral band between them.
+
+              Stating the remainder closes a real arithmetic gap the audit
+              caught on this page (32 + 11 = 43, not 47). A reader who adds the
+              two numbers and finds them short has been given no way to tell a
+              missing bucket from a bug.
+            */}
+            {summary.relationship_count > summary.allies.length + summary.rivals.length ? (
+              <p className="w-full text-[11.5px] text-ink-muted sm:w-auto">
+                {summary.relationship_count - summary.allies.length - summary.rivals.length} relasi
+                di antaranya netral
+              </p>
+            ) : null}
           </div>
         </div>
       </Panel>
@@ -456,14 +516,14 @@ export function FigureDetailPage() {
                       <span className="text-[12.5px] font-semibold">{entry.issue}</span>
                       <ScoreValue
                         score={entry.weighted_avg}
-                        color={scoreColor(entry.weighted_avg)}
+                        color={scoreBarColor(entry.weighted_avg)}
                         size="sm"
                       />
                     </div>
                     <div className="mt-1.5">
                       <ScoreRule
                         score={entry.weighted_avg}
-                        color={scoreColor(entry.weighted_avg)}
+                        color={scoreBarColor(entry.weighted_avg)}
                         height={4}
                         label={`${entry.issue}: ${entry.weighted_avg}`}
                       />
@@ -492,10 +552,10 @@ export function FigureDetailPage() {
                   <li key={ally.id}>
                     <Link
                       to={`/figur/${ally.id}`}
-                      className="flex min-h-[44px] items-center justify-between gap-3 rounded-sm border border-rule px-3 py-2 hover:border-primary"
+                      className="flex min-h-[44px] items-center justify-between gap-3 rounded-sm border border-control-border px-3 py-2 hover:border-primary"
                     >
                       <span className="truncate text-[13px]">{ally.name}</span>
-                      <ScoreValue score={ally.score} color={scoreColor(ally.score)} size="sm" />
+                      <ScoreValue score={ally.score} color={scoreTextColor(ally.score)} size="sm" />
                     </Link>
                   </li>
                 ))}
@@ -513,10 +573,10 @@ export function FigureDetailPage() {
                   <li key={rival.id}>
                     <Link
                       to={`/figur/${rival.id}`}
-                      className="flex min-h-[44px] items-center justify-between gap-3 rounded-sm border border-rule px-3 py-2 hover:border-primary"
+                      className="flex min-h-[44px] items-center justify-between gap-3 rounded-sm border border-control-border px-3 py-2 hover:border-primary"
                     >
                       <span className="truncate text-[13px]">{rival.name}</span>
-                      <ScoreValue score={rival.score} color={scoreColor(rival.score)} size="sm" />
+                      <ScoreValue score={rival.score} color={scoreTextColor(rival.score)} size="sm" />
                     </Link>
                   </li>
                 ))}

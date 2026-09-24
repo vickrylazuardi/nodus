@@ -112,7 +112,7 @@ function LoginPage({ onSignIn }: { onSignIn: (username: string) => void }) {
         </form>
 
         {login.isError ? (
-          <p role="alert" className="mt-3 text-[13px] text-hostile">
+          <p role="alert" className="mt-3 text-[13px] text-hostile-text">
             {(login.error as Error).message}
           </p>
         ) : null}
@@ -197,7 +197,7 @@ export function AdminApp() {
             <div className="flex items-center gap-2">
               <a
                 href="/"
-                className="inline-flex min-h-[44px] items-center rounded-sm border border-rule px-2.5 py-1.5 text-[12.5px] text-ink-soft hover:border-primary hover:text-primary-ink"
+                className="inline-flex min-h-[44px] items-center rounded-sm border border-control-border px-2.5 py-1.5 text-[12.5px] text-ink-soft hover:border-primary hover:text-primary-ink"
               >
                 Lihat situs publik
               </a>

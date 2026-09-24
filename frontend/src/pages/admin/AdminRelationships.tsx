@@ -20,7 +20,7 @@ import {
 import { ConfirmDialog } from "@/pages/admin/AdminApp";
 import { useStatus } from "@/pages/admin/status";
 import { api } from "@/lib/api";
-import { formatSigned, scoreColor, tierColor } from "@/lib/format";
+import { formatSigned, scoreBarColor, scoreTextColor, tierColor } from "@/lib/format";
 import type { Issue, Relationship } from "@/lib/types";
 
 /* --------------------------------------------------------- score row schema */
@@ -131,7 +131,7 @@ const RELATIONSHIP_FIELDS = [
 function FieldError({ id, message }: { id: string; message?: string }) {
   if (!message) return null;
   return (
-    <p id={id} className="mt-1 text-[12.5px] text-hostile">
+    <p id={id} className="mt-1 text-[12.5px] text-hostile-text">
       {message}
     </p>
   );
@@ -168,7 +168,7 @@ function ErrorSummary({
           <li key={item.id} className="text-[13px]">
             <a
               href={`#${item.id}`}
-              className="text-hostile underline underline-offset-2 hover:text-ink"
+              className="text-hostile-text underline underline-offset-2 hover:text-ink"
             >
               {item.message}
             </a>
@@ -549,7 +549,7 @@ function ScoreEditorForm({
           Dasar (rata-rata berbobot):{" "}
           <strong
             className="tabular font-semibold"
-            style={{ color: scoreColor(preview.base) }}
+            style={{ color: scoreTextColor(preview.base) }}
           >
             {formatSigned(preview.base)}
           </strong>
@@ -558,7 +558,7 @@ function ScoreEditorForm({
           Modifier:{" "}
           <strong
             className="tabular font-semibold"
-            style={{ color: scoreColor(preview.modifierTotal) }}
+            style={{ color: scoreTextColor(preview.modifierTotal) }}
           >
             {formatSigned(preview.modifierTotal)}
           </strong>
@@ -567,7 +567,7 @@ function ScoreEditorForm({
           Skor akhir:{" "}
           <strong
             className="tabular font-semibold"
-            style={{ color: scoreColor(preview.total) }}
+            style={{ color: scoreTextColor(preview.total) }}
           >
             {formatSigned(preview.total)}
           </strong>
@@ -619,7 +619,7 @@ function ScoreEditorForm({
                 <div className="flex items-center gap-3">
                   <ScoreValue
                     score={row.score}
-                    color={scoreColor(row.score)}
+                    color={scoreTextColor(row.score)}
                     size="md"
                   />
                   {isSaved ? (
@@ -651,7 +651,7 @@ function ScoreEditorForm({
                       ? `${rowInputId(issue.id, "score")}-error`
                       : undefined
                   }
-                  className="flex-1 accent-[#9A6B2F]"
+                  className="flex-1 accent-primary"
                 />
               </div>
               <FieldError
@@ -849,7 +849,7 @@ function ScoreEditorForm({
       </form>
 
       {serverError ? (
-        <p role="alert" className="mt-3 text-[13px] text-hostile">
+        <p role="alert" className="mt-3 text-[13px] text-hostile-text">
           {serverError}
         </p>
       ) : null}
@@ -1026,7 +1026,7 @@ export function AdminRelationships() {
                   // min-h-[44px] is the touch-target floor. This field
                   // hand-rolls the input styles instead of using inputClass,
                   // so it missed the shared fix and measured 38px.
-                  "min-h-[44px] w-[200px] rounded-sm border border-rule bg-neutral-raised px-2.5 py-2 text-[13px]"
+                  "min-h-[44px] w-[200px] rounded-sm border border-control-border bg-neutral-raised px-2.5 py-2 text-[13px]"
                 }
               />
               <Button variant="primary" onClick={() => setCreating((v) => !v)}>
@@ -1126,7 +1126,7 @@ export function AdminRelationships() {
         ) : null}
 
         {createRel.isError ? (
-          <p role="alert" className="mb-4 text-[13px] text-hostile">
+          <p role="alert" className="mb-4 text-[13px] text-hostile-text">
             {(createRel.error as Error).message}
           </p>
         ) : null}
@@ -1187,13 +1187,13 @@ export function AdminRelationships() {
                       <div className="flex items-center gap-2">
                         <ScoreValue
                           score={rel.score}
-                          color={scoreColor(rel.score)}
+                          color={scoreBarColor(rel.score)}
                           size="sm"
                         />
                         <span className="w-[70px]">
                           <ScoreRule
                             score={rel.score}
-                            color={scoreColor(rel.score)}
+                            color={scoreBarColor(rel.score)}
                             height={4}
                             label={`Skor ${rel.score}`}
                           />
@@ -1205,7 +1205,7 @@ export function AdminRelationships() {
                     </td>
                     <td
                       className="tabular px-3 py-2.5"
-                      style={{ color: scoreColor(rel.modifier_total) }}
+                      style={{ color: scoreTextColor(rel.modifier_total) }}
                     >
                       {formatSigned(rel.modifier_total)}
                     </td>

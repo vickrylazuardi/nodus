@@ -18,7 +18,7 @@ import {
 import { ConfirmDialog } from "@/pages/admin/AdminApp";
 import { useStatus } from "@/pages/admin/status";
 import { api } from "@/lib/api";
-import { scoreColor } from "@/lib/format";
+import { scoreTextColor } from "@/lib/format";
 import type { Issue } from "@/lib/types";
 
 /**
@@ -85,7 +85,7 @@ function toDefaults(editing: Issue | "new"): FormValues {
 function FieldError({ id, message }: { id: string; message?: string }) {
   if (!message) return null;
   return (
-    <p id={id} className="mt-1 text-[12.5px] text-hostile">
+    <p id={id} className="mt-1 text-[12.5px] text-hostile-text">
       {message}
     </p>
   );
@@ -185,7 +185,7 @@ function IssueEditor({ editing, onClose }: { editing: Issue | "new"; onClose: ()
                 <li key={item.id} className="text-[13px]">
                   <a
                     href={`#${item.id}`}
-                    className="text-hostile underline underline-offset-2 hover:text-ink"
+                    className="text-hostile-text underline underline-offset-2 hover:text-ink"
                   >
                     {item.message}
                   </a>
@@ -264,7 +264,7 @@ function IssueEditor({ editing, onClose }: { editing: Issue | "new"; onClose: ()
         </Field>
 
         {serverError ? (
-          <p role="alert" className="text-[13px] text-hostile">
+          <p role="alert" className="text-[13px] text-hostile-text">
             {serverError}
           </p>
         ) : null}
@@ -417,7 +417,7 @@ export function AdminIssues() {
                       ) : (
                         <ScoreValue
                           score={Math.round(issue.avg_score)}
-                          color={scoreColor(issue.avg_score)}
+                          color={scoreTextColor(issue.avg_score)}
                           size="sm"
                         />
                       )}

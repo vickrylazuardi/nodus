@@ -28,8 +28,8 @@ import type { Figure, FigureDetail, FigureRef, Tier } from "@/lib/types";
 /* ------------------------------------------------------------------ fixtures */
 
 const TIERS: Tier[] = [
-  { key: "alliance", label: "Aliansi", description: "Mitra kuat", color: "#2A6B5A", threshold: 55 },
-  { key: "hostile", label: "Bermusuhan", description: "Berselisih", color: "#7E2A25", threshold: -80 },
+  { key: "alliance", label: "Aliansi", description: "Mitra kuat", color: "#185542", threshold: 55 },
+  { key: "hostile", label: "Bermusuhan", description: "Berselisih", color: "#6E1913", threshold: -80 },
 ];
 
 function makeFigure(id: number, name: string): Figure {
@@ -328,16 +328,22 @@ describe("T3 — every interactive element carries a >=44px hit area", () => {
     }
   });
 
-  it("the figure cards are hit-area sized", async () => {
+  it("the figure index rows are hit-area sized", async () => {
+    /*
+     * /figur is a ranked table now, not a card grid, so the profile links live
+     * inside tbody. The assertion is the same contract as before: every link a
+     * reader taps to open a profile carries a 44px minimum, whether it is a
+     * card or a row.
+     */
     renderRoute("/figur");
     await waitFor(() => expect(document.querySelectorAll("h1")).toHaveLength(1));
 
-    const cards = Array.from(
-      document.querySelectorAll<HTMLElement>('a[href^="/figur/"]'),
-    ).filter((a) => !a.closest("nav") && !a.closest("thead") && !a.closest("tbody"));
-    expect(cards.length).toBeGreaterThan(0);
-    for (const card of cards) {
-      expect(hasHitArea(card.className || ""), `figure card lacks a hit area`).toBe(true);
+    const links = Array.from(
+      document.querySelectorAll<HTMLElement>('tbody a[href^="/figur/"]'),
+    );
+    expect(links.length).toBeGreaterThan(0);
+    for (const link of links) {
+      expect(hasHitArea(link.className || ""), `figure row link lacks a hit area`).toBe(true);
     }
   });
 

@@ -35,7 +35,7 @@ const BUTTON_STYLES: Record<ButtonVariant, string> = {
   primary:
     "bg-primary text-white hover:bg-primary-bright hover:text-ink border border-primary hover:border-primary-bright",
   quiet:
-    "bg-neutral-sunk text-ink border border-rule hover:border-primary hover:bg-neutral-raised",
+    "bg-neutral-sunk text-ink border border-control-border hover:border-primary hover:bg-neutral-raised",
   danger: "bg-hostile text-white border border-hostile hover:opacity-90",
 };
 
@@ -147,12 +147,15 @@ export function TierChip({
   );
 }
 
-/** Tier legend. Inline tier chips with color bars, no distribution counts by default. */
+/** Tier legend. Inline tier chips with colour bars, no distribution counts by default. */
 export function TierLegend({ tiers }: { tiers: Array<{ key: string; label: string; color: string }> }) {
   return (
     <div className={cx("flex flex-wrap gap-x-4 gap-y-2")} aria-label="Tingkat opini">
       {tiers.map((tier) => (
-        <span className={cx("flex items-center gap-1.5 text-[11.5px] text-ink-soft")}>
+        <span
+          key={tier.key}
+          className={cx("flex items-center gap-1.5 text-[11.5px] text-ink-soft")}
+        >
           <span
             aria-hidden="true"
             className="h-[3px] w-5 rounded-full"
@@ -176,21 +179,32 @@ export function Tag({ children }: { children: ReactNode }) {
 /* -------------------------------------------------------------- ScoreRule */
 
 /**
- * The identity motif: a hairline split at the midpoint with the filled portion
- * extending left for hostile and right for allied. Reused at three zoom levels
- * (matrix cell, relationship row, per-issue breakdown) so the same mark reads
- * the same way wherever it appears.
+ * The identity motif: a horizontal measure with a marked zero axis, optional
+ * ticks, and the value filled outward from the centre, left for hostile and
+ * right for allied. Reused at four zoom levels (matrix cell, relationship row,
+ * per-issue breakdown, profile hero) so the same mark reads the same way
+ * wherever it appears.
+ *
+ * Why the axis and ticks are not optional: the previous pass drew a diverging
+ * bar with no midpoint, so a reader could not find zero and could not tell a
+ * strong hostile from a weak one. A diverging bar without a marked centre is a
+ * decoration, not a measurement. See DESIGN.md `## Information Design`.
  */
 export function ScoreRule({
   score,
   color,
   height = 6,
   label,
+  ticks = false,
+  className,
 }: {
   score: number;
   color: string;
   height?: number;
   label?: string;
+  /** Draw ticks at ±50 and ±100. Use on a primary reading position. */
+  ticks?: boolean;
+  className?: string;
 }) {
   const clamped = Math.max(-100, Math.min(100, score));
   const half = Math.abs(clamped) / 2;
@@ -199,22 +213,124 @@ export function ScoreRule({
 
   return (
     <div
-      className="relative w-full overflow-hidden rounded-sm bg-neutral-sunk"
-      style={{ height }}
+      className={cx("scale-rule relative w-full overflow-hidden rounded-sm", className)}
+      style={{ height, backgroundColor: "var(--scale-track)" }}
       role="img"
-      aria-label={label ?? `Skor ${score}`}
+      aria-label={label ?? `Skor ${score} dari rentang -100 sampai +100`}
     >
-      <span
-        aria-hidden="true"
-        className="absolute inset-y-0 left-1/2 z-10 w-px bg-ink/25"
-      />
+      {ticks ? (
+        <>
+          <span aria-hidden="true" className="scale-tick" style={{ left: "25%" }} />
+          <span aria-hidden="true" className="scale-tick" style={{ left: "75%" }} />
+        </>
+      ) : null}
+      <span aria-hidden="true" className="absolute inset-y-0 left-1/2 z-10 w-px bg-rule-strong" />
       <span
         className="absolute inset-y-0 rounded-sm"
         style={{ left: `${left}%`, width: `${width}%`, backgroundColor: color }}
       />
+      {/*
+        The value marker.
+
+        A bare filled extent says "some positive amount" and nothing more, so
+        the bar cannot answer "where exactly does this sit?". A caret at the
+        terminus gives the fill a readable endpoint on the scale, which is what
+        makes the mark a measurement rather than a proportion.
+      */}
+      <span
+        aria-hidden="true"
+        className="absolute inset-y-0 z-20 w-[2px] bg-ink"
+        style={{ left: `calc(${clamped < 0 ? left : left + width}% - 1px)` }}
+      />
     </div>
   );
 }
+
+/**
+ * A score scale with its range made explicit.
+ *
+ * The hero number on a profile was previously a bare numeral with no scale,
+ * which the visual audit found meaningless: the largest thing on the page told
+ * a first-time reader nothing about what it measured or where it sat. This
+ * pairs the numeral with the -100..+100 axis it is drawn from and the tier it
+ * falls in.
+ *
+ * The tick labels are the tier thresholds, not arbitrary marks. A band name
+ * like "Akrab" is asserted rather than placed unless the reader can see where
+ * the bands begin, which is what the audit flagged about the previous version.
+ */
+export function ScoreScale({
+  score,
+  color,
+  tierLabel,
+  size = "md",
+  ticks,
+}: {
+  score: number;
+  color: string;
+  tierLabel?: string;
+  size?: "sm" | "md" | "lg";
+  /**
+   * Tier boundaries to mark on the axis, as scores. Rendered as small labels
+   * under the bar so a reader can place the value against them.
+   */
+  ticks?: Array<{ score: number; label: string }>;
+}) {
+  const numerals = {
+    sm: "text-[26px]",
+    md: "text-[38px]",
+    lg: "text-[52px]",
+  } as const;
+  const barHeight = { sm: 6, md: 8, lg: 10 } as const;
+
+  return (
+    <div className="w-full">
+      <div className="flex items-end justify-between gap-3">
+        <span
+          className={cx("tabular font-semibold leading-none", numerals[size])}
+          style={{ color }}
+        >
+          {score > 0 ? `+${score}` : String(score)}
+        </span>
+        {tierLabel ? (
+          <span className="pb-1 text-[12px] font-medium text-ink-soft">{tierLabel}</span>
+        ) : null}
+      </div>
+
+      <ScoreRule score={score} color={color} height={barHeight[size]} ticks className="mt-2" />
+
+      {/*
+        The range is stated, not implied. Without it the numeral is a riddle.
+        When tier boundaries are supplied they replace the generic pole labels,
+        so the axis teaches the vocabulary instead of only naming the extremes.
+      */}
+      {ticks && ticks.length > 0 ? (
+        <div className="relative mt-1 h-[16px]">
+          {ticks.map((tick) => {
+            // Map -100..100 onto 0..100% of the track.
+            const pct = ((tick.score + 100) / 200) * 100;
+            return (
+              <span
+                key={tick.score}
+                className="absolute -translate-x-1/2 whitespace-nowrap text-[11px] font-medium text-ink-soft"
+                style={{ left: `${pct}%` }}
+              >
+                {tick.label}
+              </span>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="mt-1 flex justify-between text-[11px] font-medium text-ink-soft">
+          <span>−100 bermusuhan</span>
+          <span>0</span>
+          <span>+100 sekutu</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
 
 /* ------------------------------------------------------------------ Score */
 
@@ -374,9 +490,9 @@ export function StatRow({ left, right }: { left: string | React.ReactNode; right
 type MedallionSize = "sm" | "md" | "lg";
 
 const SIZE_CLASS: Record<MedallionSize, { radius: string; text: string; bg: string }> = {
-  sm: { radius: "h-7 w-7", text: "text-[9px]", bg: "#EFE6D4" },
-  md: { radius: "h-12 w-12", text: "text-[13px]", bg: "#F7F1E4" },
-  lg: { radius: "h-16 w-16", text: "text-[18px]", bg: "#F7F1E4" },
+  sm: { radius: "h-7 w-7", text: "text-[10px]", bg: "#E8EBF0" },
+  md: { radius: "h-12 w-12", text: "text-[14px]", bg: "#E8EBF0" },
+  lg: { radius: "h-16 w-16", text: "text-[19px]", bg: "#E8EBF0" },
 };
 
 export function Medallion({
@@ -446,5 +562,5 @@ export function Medallion({
  * covers every admin form at once.
  */
 export const inputClass =
-  "min-h-[44px] w-full rounded-sm border border-rule bg-neutral-raised px-2.5 py-2 text-[13.5px] text-ink " +
-  "placeholder:text-ink-soft/60 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30";
+  "min-h-[44px] w-full rounded-sm border border-control-border bg-neutral-raised px-2.5 py-2 text-[13.5px] text-ink " +
+  "placeholder:text-ink-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30";

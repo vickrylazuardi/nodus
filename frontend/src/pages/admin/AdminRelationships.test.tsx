@@ -29,7 +29,7 @@ const TIER: Tier = {
   key: "cordial",
   label: "Netral Positif",
   description: "Umumnya sejalan",
-  color: "#3F7F6C",
+  color: "#3C745E",
   threshold: 0,
 };
 

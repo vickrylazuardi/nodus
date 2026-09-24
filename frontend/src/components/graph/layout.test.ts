@@ -44,7 +44,7 @@ function fixture(): GraphData {
     influence,
     degree: 2,
     size: 30,
-    tier: { key: "neutral", label: "Netral", description: "", color: "#525A66", threshold: 0 },
+    tier: { key: "neutral", label: "Netral", description: "", color: "#6A7487", threshold: 0 },
   });
 
   const edge = (
@@ -59,8 +59,8 @@ function fixture(): GraphData {
     score,
     label: String(score),
     rel_type: "test",
-    tier: { key: "neutral", label: "Netral", description: "", color: "#525A66", threshold: 0 },
-    style: { color: "#525A66", width: 2, dashes: score < 0, arrows: "to", opacity: 0.8 },
+    tier: { key: "neutral", label: "Netral", description: "", color: "#6A7487", threshold: 0 },
+    style: { color: "#6A7487", width: 2, dashes: score < 0, arrows: "to", opacity: 0.8 },
     title: "t",
     top_issue: null,
   });
@@ -167,7 +167,7 @@ describe("buildElements", () => {
   it("takes colours from the data, never from a hard-coded palette", () => {
     const els = buildElements(fixture(), { compound: true });
     const edge = els.find((e) => e.data.id === "e1");
-    expect(edge?.data.color).toBe("#525A66");
+    expect(edge?.data.color).toBe("#6A7487");
   });
 
   it("carries the score onto the edge so the layout can read it", () => {

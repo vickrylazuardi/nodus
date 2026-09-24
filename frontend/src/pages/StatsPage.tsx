@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { ErrorState, LoadingState, Panel, PanelHeader, ScoreValue, TierLegend } from "@/components/ui";
 import { api } from "@/lib/api";
-import { formatDate, scoreColor } from "@/lib/format";
+import { formatDate, scoreColor, scoreTextColor } from "@/lib/format";
 
 export function StatsPage() {
   const statsQuery = useQuery({ queryKey: ["stats"], queryFn: api.stats });
@@ -47,10 +47,10 @@ export function StatsPage() {
             { label: "Modifier aktif", value: stats.totals.active_modifiers },
           ].map((item) => (
             <div key={item.label} className="rounded-md border border-rule bg-neutral-sunk/50 p-4">
-              <dd className="tabular font-display text-[27px] font-bold leading-none">
+              <dd className="tabular font-mono text-[27px] font-semibold leading-none">
                 {item.value}
               </dd>
-              <dt className="mt-1 text-[11.5px] uppercase tracking-[0.06em] text-ink-soft">
+              <dt className="mt-1 text-[12px] uppercase tracking-[0.06em] text-ink-muted">
                 {item.label}
               </dt>
             </div>
@@ -62,12 +62,18 @@ export function StatsPage() {
         <Panel>
           <PanelHeader
             title="Sebaran tingkat hubungan"
-            description="Berapa banyak relasi yang berada di setiap tingkat."
+            description="Berapa banyak relasi yang berada di setiap tingkat, dari blok solid sampai bermusuhan."
           />
+          {/*
+            The distribution is drawn as one banded bar with the scale labelled
+            beneath it, so the segments read as positions on the score ladder
+            rather than as an unordered colour strip. Counts stay visible on
+            segments wide enough to hold them; the legend below carries the rest.
+          */}
           <div
-            className="flex h-[38px] overflow-hidden rounded-md border border-rule"
+            className="flex h-[44px] overflow-hidden rounded-md border border-rule"
             role="img"
-            aria-label="Diagram batang sebaran tingkat hubungan"
+            aria-label={`Diagram batang sebaran tingkat hubungan untuk ${total} relasi`}
           >
             {tiers.map((tier) => {
               const count = stats.tier_distribution[tier.label] ?? 0;
@@ -76,15 +82,29 @@ export function StatsPage() {
               return (
                 <div
                   key={tier.key}
-                  className="grid place-items-center text-[11px] font-bold text-white"
+                  className="tier-fill grid place-items-center text-[11.5px] font-semibold text-white"
                   style={{ width: `${pct}%`, backgroundColor: scoreColor(tier.threshold) }}
-                  title={`${tier.label}: ${count} relasi`}
+                  title={`${tier.label}: ${count} relasi (${pct.toFixed(1)}%)`}
                 >
                   {pct > 8 ? count : ""}
                 </div>
               );
             })}
           </div>
+
+          {/*
+            The axis names the two poles, which is what makes the band a scale
+            instead of a stacked bar. The API returns tiers ordered from the
+            most allied (threshold 80) to the most hostile (threshold -100), so
+            the allied end is on the left. Without the axis a reader has to
+            consult the legend to learn which end is which.
+          */}
+          <div className="mt-1.5 flex justify-between text-[11.5px] text-ink-muted">
+            <span>← sekutu</span>
+            <span>{total} relasi</span>
+            <span>bermusuhan →</span>
+          </div>
+
           <div className="mt-4">
             <TierLegend tiers={tiers} />
           </div>
@@ -102,7 +122,7 @@ export function StatsPage() {
                   <span className="text-[13px] font-semibold">{issue.issue}</span>
                   <ScoreValue
                     score={Math.round(issue.avg)}
-                    color={scoreColor(issue.avg)}
+                    color={scoreTextColor(issue.avg)}
                     size="sm"
                   />
                 </div>
@@ -145,7 +165,7 @@ export function StatsPage() {
                    * 353px inside a 280px grid.
                    */}
                   <span className="min-w-0 truncate text-[13px]">{row.pair}</span>
-                  <ScoreValue score={row.score} color={scoreColor(row.score)} size="sm" />
+                  <ScoreValue score={row.score} color={scoreTextColor(row.score)} size="sm" />
                 </li>
               ))}
             </ul>

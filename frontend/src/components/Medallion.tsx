@@ -19,9 +19,9 @@ interface Props {
 }
 
 const SIZES = {
-  sm: { radius: "h-7 w-7", text: "text-[9px]", bg: "#EFE6D4" },
-  md: { radius: "h-12 w-12", text: "text-[13px]", bg: "#F7F1E4" },
-  lg: { radius: "h-16 w-16", text: "text-[18px]", bg: "#F7F1E4" },
+  sm: { radius: "h-7 w-7", text: "text-[10px]", bg: "#E8EBF0" },
+  md: { radius: "h-12 w-12", text: "text-[14px]", bg: "#E8EBF0" },
+  lg: { radius: "h-16 w-16", text: "text-[19px]", bg: "#E8EBF0" },
 };
 
 export function Medallion({ name, imageUrl, size = "md", className }: Props) {

@@ -10,6 +10,7 @@ import { MatrixPage } from "@/pages/MatrixPage";
 import { StatsPage } from "@/pages/StatsPage";
 import { LoadingState, Panel } from "@/components/ui";
 import { cx } from "@/lib/format";
+import { useTheme } from "@/lib/useTheme";
 
 /*
  * The admin dashboard is loaded lazily.
@@ -35,6 +36,8 @@ const NAV = [
 ];
 
 function Masthead() {
+  const { theme, toggle } = useTheme();
+
   return (
     <header className="sticky top-0 z-40 border-b border-rule bg-neutral/95 backdrop-blur-sm">
       {/*
@@ -55,7 +58,7 @@ function Masthead() {
       <div className="mx-auto flex max-w-[1600px] flex-wrap items-center gap-x-2 gap-y-1 px-4 py-2 lg:flex-nowrap lg:gap-x-6 lg:px-5 lg:py-2.5">
         <NavLink to="/peta" className="flex min-h-[44px] items-center">
           <span className="flex items-baseline gap-2.5">
-            <span className="font-display text-[19px] font-bold tracking-[0.22em] text-primary-ink lg:text-[21px]">
+            <span className="font-display text-[19px] font-bold tracking-[0.18em] text-primary-ink lg:text-[21px]">
               NODUS
             </span>
             {/*
@@ -63,7 +66,7 @@ function Masthead() {
              * politik" only said what the thing is, which the nav already says
              * five times. This says why it exists.
              */}
-            <span className="hidden text-[11px] uppercase tracking-[0.14em] text-ink-soft sm:inline">
+            <span className="hidden text-[11px] uppercase tracking-[0.12em] text-ink-soft sm:inline">
               Siapa bersekongkol dengan siapa
             </span>
           </span>
@@ -92,9 +95,16 @@ function Masthead() {
                   // 41px wide, so a height-only fix would still leave a target
                   // too narrow to hit.
                   "flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-sm px-3 py-1.5 text-[13px] transition-colors lg:px-2.5 lg:text-[13.5px]",
+                  /*
+                   * The active state is an underline rule plus ink, not a faint
+                   * tinted fill. The previous pass used a 10% accent wash on a
+                   * warm ground, and the visual audit found the contrast delta
+                   * small enough that it was easy to miss which tab was active.
+                   * A 2px rule is unambiguous at a glance and costs no colour.
+                   */
                   isActive
-                    ? "bg-primary/10 font-semibold text-primary-ink"
-                    : "text-ink-soft hover:bg-neutral-sunk hover:text-ink",
+                    ? "border-b-2 border-primary-ink font-semibold text-primary-ink"
+                    : "border-b-2 border-transparent text-ink-soft hover:bg-neutral-sunk hover:text-ink",
                 )
               }
             >
@@ -103,12 +113,24 @@ function Masthead() {
           ))}
         </nav>
 
-        <NavLink
-          to="/admin"
-          className="ml-auto flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-sm border border-rule px-3 py-1.5 text-[12.5px] text-ink-soft transition-colors hover:border-primary hover:text-primary-ink lg:ml-0 lg:order-last lg:px-2.5"
-        >
-          Admin
-        </NavLink>
+        <div className="ml-auto flex shrink-0 items-center gap-1 lg:ml-0 lg:order-last">
+          <button
+            type="button"
+            onClick={toggle}
+            aria-label={theme === "dark" ? "Ganti ke tema terang" : "Ganti ke tema gelap"}
+            title={theme === "dark" ? "Tema terang" : "Tema gelap"}
+            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-sm border border-control-border px-3 py-1.5 text-[12.5px] text-ink-soft transition-colors hover:border-primary hover:text-primary-ink"
+          >
+            {theme === "dark" ? "Terang" : "Gelap"}
+          </button>
+
+          <NavLink
+            to="/admin"
+            className="flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-sm border border-control-border px-3 py-1.5 text-[12.5px] text-ink-soft transition-colors hover:border-primary hover:text-primary-ink lg:px-2.5"
+          >
+            Admin
+          </NavLink>
+        </div>
       </div>
     </header>
   );

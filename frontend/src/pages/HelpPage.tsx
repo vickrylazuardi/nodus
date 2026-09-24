@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { ErrorState, LoadingState, Panel, PanelHeader } from "@/components/ui";
 import { api } from "@/lib/api";
-import { formatScore, scoreColor } from "@/lib/format";
+import { formatScore, scoreTextColor } from "@/lib/format";
 
 export function HelpPage() {
   const tiersQuery = useQuery({ queryKey: ["tiers"], queryFn: api.tiers });
@@ -75,12 +75,12 @@ export function HelpPage() {
                   const upper = index === 0 ? 100 : (tiers[index - 1]?.threshold ?? 100) - 1;
                   return (
                     <tr key={tier.key} className="border-b border-rule/60">
-                      <td className="tabular px-2.5 py-2" style={{ color: scoreColor(tier.threshold) }}>
+                      <td className="tabular px-2.5 py-2" style={{ color: scoreTextColor(tier.threshold) }}>
                         {formatScore(tier.threshold)} sampai {formatScore(upper)}
                       </td>
                       <td
                         className="px-2.5 py-2 font-semibold"
-                        style={{ color: scoreColor(tier.threshold) }}
+                        style={{ color: scoreTextColor(tier.threshold) }}
                       >
                         {tier.label}
                       </td>

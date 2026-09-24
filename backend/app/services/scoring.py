@@ -50,20 +50,20 @@ class Tier:
 # Ordered high to low; `tier_for` returns the first entry whose threshold the
 # score meets.
 TIERS: tuple[Tier, ...] = (
-    Tier(80, "solid_bloc", "Blok Solid", "Sekutu penuh, saling dukung di semua isu", "#1F5A4C"),
-    Tier(55, "alliance", "Aliansi", "Mitra koalisi kuat", "#2A6B5A"),
-    Tier(30, "friendly", "Akrab", "Sering sejalan, komunikasi lancar", "#357A66"),
-    Tier(8, "cordial", "Netral Positif", "Berteman tapi belum terikat", "#3F7F6C"),
-    Tier(-7, "neutral", "Netral", "Tidak ada kedekatan berarti", "#525A66"),
-    Tier(-29, "wary", "Waspada", "Ada friksi, komunikasi terbatas", "#7A6A50"),
-    Tier(-54, "tension", "Ketegangan", "Saling menyindir, potensi pecah kongsi", "#8F5A3A"),
-    Tier(-79, "rivalry", "Rivalitas", "Konfrontasi terbuka di isu utama", "#8A3F2E"),
+    Tier(80, "solid_bloc", "Blok Solid", "Sekutu penuh, saling dukung di semua isu", "#0C4232"),
+    Tier(55, "alliance", "Aliansi", "Mitra koalisi kuat", "#185542"),
+    Tier(30, "friendly", "Akrab", "Sering sejalan, komunikasi lancar", "#276650"),
+    Tier(8, "cordial", "Netral Positif", "Berteman tapi belum terikat", "#3C745E"),
+    Tier(-7, "neutral", "Netral", "Tidak ada kedekatan berarti", "#6A7487"),
+    Tier(-29, "wary", "Waspada", "Ada friksi, komunikasi terbatas", "#96584E"),
+    Tier(-54, "tension", "Ketegangan", "Saling menyindir, potensi pecah kongsi", "#934337"),
+    Tier(-79, "rivalry", "Rivalitas", "Konfrontasi terbuka di isu utama", "#862E24"),
     Tier(
         MIN_SCORE,
         "hostile",
         "Bermusuhan",
         "Konflik permanen, blok berbeda",
-        "#7E2A25",
+        "#6E1913",
     ),
 )
 

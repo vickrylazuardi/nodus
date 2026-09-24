@@ -6,17 +6,41 @@
     <title>NODUS · Peta Relasi Politik Indonesia</title>
     <meta
       name="description"
-      content="Peta relasi antar figur politik Indonesia dengan skor per isu, terinspirasi sistem diplomasi Civilization VI."
+      content="Peta relasi antar figur politik Indonesia dengan skor per isu. Skor ilustratif, dihitung dari penilaian berita terbuka."
     />
+    <script>
+      /*
+       * Theme is applied before first paint.
+       *
+       * Reading it from localStorage here rather than in React avoids a flash of
+       * the wrong theme: a React effect runs after the first paint, so a dark
+       * reader would see a light frame first. Kept tiny and inline for that
+       * reason. Defaults to the OS preference when nothing is stored.
+       */
+      (function () {
+        try {
+          var stored = localStorage.getItem("nodus-theme");
+          var prefersDark =
+            window.matchMedia &&
+            window.matchMedia("(prefers-color-scheme: dark)").matches;
+          var theme = stored === "dark" || stored === "light" ? stored : prefersDark ? "dark" : "light";
+          document.documentElement.dataset.theme = theme;
+        } catch (e) {
+          document.documentElement.dataset.theme = "light";
+        }
+      })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <!--
-      Spectral carries display and numerals; Inter Tight carries body and UI.
-      Both are chosen in DESIGN.md: Spectral for the authority of a printed
-      ledger, Inter Tight because it stays legible in dense tables.
+      IBM Plex carries the whole interface. Plex Sans for body, UI and display
+      because it was drawn for technical documentation and holds up at the
+      12-13px sizes most of this interface uses. Plex Mono for measured values
+      only: tabular mono digits do not shift width as scores update, which is
+      what makes a column of numbers scannable. Chosen in DESIGN.md.
     -->
     <link
-      href="https://fonts.googleapis.com/css2?family=Spectral:wght@400;600;700&family=Inter+Tight:wght@400;500;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
   </head>

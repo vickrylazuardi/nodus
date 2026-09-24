@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 
 import { ErrorState, LoadingState, Panel, PanelHeader, ResultCount, TierLegend } from "@/components/ui";
 import { api } from "@/lib/api";
-import { formatScore, scoreColor } from "@/lib/format";
+import { formatScore, scoreColor, cx } from "@/lib/format";
 import { indices, leadingSize, trailingSize, visibleRange } from "@/lib/virtualize";
 import type { MatrixCell } from "@/lib/types";
 
@@ -46,6 +46,19 @@ export function MatrixPage() {
   const [bloc, setBloc] = useState("");
   /** null keeps the API's own order; the server already ranks sensibly. */
   const [sortDir, setSortDir] = useState<"asc" | "desc" | null>(null);
+  /**
+   * Hovered row and column, for the crosshair.
+   *
+   * At 58 columns a reader cannot track one row across the grid by eye: the
+   * coordinate headers are sticky but the row itself is not. Highlighting the
+   * full row and column on hover is what makes a cell addressable. This was
+   * missing entirely in the previous pass, which the visual audit flagged as
+   * the single biggest reading aid gap.
+   */
+  const [hover, setHover] = useState<{ row: number | null; col: number | null }>({
+    row: null,
+    col: null,
+  });
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const [scroll, setScroll] = useState({ top: 0, left: 0 });
@@ -248,9 +261,10 @@ export function MatrixPage() {
         title="Matriks relasi"
         description={
           <>
-            Setiap sel adalah skor antara dua figur. Hijau berarti sekutu, merah berarti
-            bermusuhan, dan sel kosong berarti relasinya belum dipetakan. Klik nama figur untuk
-            membuka profilnya.
+            Setiap sel adalah skor antara dua figur, pada rentang −100 sampai +100. Warna
+            menunjukkan arah dan kekuatan sekaligus: makin gelap, makin kuat. Sel kosong berarti
+            relasinya belum dipetakan, dan garis pada diagonal menandai figur yang sama. Klik nama
+            figur untuk membuka profilnya.
           </>
         }
         actions={
@@ -260,7 +274,7 @@ export function MatrixPage() {
               <select
                 value={bloc}
                 onChange={(e) => setBloc(e.target.value)}
-                className="min-h-[44px] rounded-sm border border-rule bg-neutral-raised px-2 py-1.5 text-[12.5px] text-ink"
+                className="min-h-[44px] rounded-sm border border-control-border bg-neutral-raised px-2 py-1.5 text-[12.5px] text-ink"
               >
                 <option value="">Semua blok</option>
                 {blocs.map((b) => (
@@ -279,7 +293,7 @@ export function MatrixPage() {
                   const v = e.target.value;
                   setSortDir(v === "" ? null : (v as "asc" | "desc"));
                 }}
-                className="min-h-[44px] rounded-sm border border-rule bg-neutral-raised px-2 py-1.5 text-[12.5px] text-ink"
+                className="min-h-[44px] rounded-sm border border-control-border bg-neutral-raised px-2 py-1.5 text-[12.5px] text-ink"
               >
                 <option value="">Bawaan</option>
                 <option value="asc">A ke Z</option>
@@ -342,7 +356,12 @@ export function MatrixPage() {
                     key={figure.id}
                     scope="col"
                     style={{ width: COL_WIDTH }}
-                    className="sticky top-0 z-20 h-[132px] border-b border-r border-rule bg-neutral-raised p-0 align-bottom"
+                    onMouseEnter={() => setHover((h) => ({ ...h, col: ci }))}
+                    onMouseLeave={() => setHover((h) => ({ ...h, col: null }))}
+                    className={cx(
+                      "sticky top-0 z-20 h-[132px] border-b border-r border-rule p-0 align-bottom",
+                      hover.col === ci ? "bg-neutral-sunk" : "bg-neutral-raised",
+                    )}
                   >
                     <span
                       className="inline-block whitespace-nowrap px-1 py-2 text-[11px] font-medium text-ink-soft"
@@ -373,11 +392,18 @@ export function MatrixPage() {
               const rowFigure = figures[ri];
               if (!rowFigure) return null;
               return (
-                <tr key={rowFigure.id}>
+                <tr
+                  key={rowFigure.id}
+                  onMouseEnter={() => setHover((h) => ({ ...h, row: ri }))}
+                  onMouseLeave={() => setHover((h) => ({ ...h, row: null }))}
+                >
                   <th
                     scope="row"
                     style={{ width: ROW_HEADER_WIDTH }}
-                    className="sticky left-0 z-10 whitespace-nowrap border-b border-r border-rule bg-neutral-raised p-0 text-left text-[11.5px] font-medium"
+                    className={cx(
+                      "sticky left-0 z-10 whitespace-nowrap border-b border-r border-rule p-0 text-left text-[11.5px] font-medium",
+                      hover.row === ri ? "bg-neutral-sunk" : "bg-neutral-raised",
+                    )}
                   >
                     {/*
                      * The name fills the row so the target is the whole cell, not
@@ -403,15 +429,27 @@ export function MatrixPage() {
                     const colFigure = figures[ci];
                     if (!colFigure) return null;
                     const cell = cellIndex.get(`${rowFigure.id}:${colFigure.id}`);
+                    const inCross = hover.row === ri || hover.col === ci;
+
+                    /*
+                     * The diagonal is marked with the strong rule, not left as
+                     * another blank. The previous pass left it invisible, so a
+                     * reader lost their place constantly against the blanks.
+                     */
                     if (!cell || cell.self) {
                       return (
                         <td
                           key={colFigure.id}
                           data-cell="1"
+                          data-diagonal={cell?.self ? "1" : undefined}
                           style={{ width: COL_WIDTH, height: ROW_HEIGHT }}
-                          className="border-b border-r border-rule bg-neutral-sunk/40 text-center text-[10.5px] text-ink-soft/50"
+                          className="border-b border-r border-rule bg-neutral-sunk text-center text-[10.5px] text-ink-muted"
+                          title={cell?.self ? "Figur yang sama" : undefined}
                         >
-                          ·
+                          <span
+                            aria-hidden="true"
+                            className="mx-auto block h-px w-4 bg-rule-strong"
+                          />
                         </td>
                       );
                     }
@@ -421,7 +459,10 @@ export function MatrixPage() {
                           key={colFigure.id}
                           data-cell="1"
                           style={{ width: COL_WIDTH, height: ROW_HEIGHT }}
-                          className="border-b border-r border-rule bg-neutral-raised text-center text-[10.5px] text-ink-soft/40"
+                          className={cx(
+                            "border-b border-r border-rule text-center text-[10.5px] text-ink-muted",
+                            inCross ? "bg-neutral-sunk" : "bg-neutral-raised",
+                          )}
                           title="Belum ada data relasi"
                         >
                           ·
@@ -435,10 +476,12 @@ export function MatrixPage() {
                           width: COL_WIDTH,
                           height: ROW_HEIGHT,
                           backgroundColor: scoreColor(cell.score),
-                          color: "#F7F1E4",
+                          color: "#FFFFFF",
+                          outline: inCross ? "2px solid var(--border-strong)" : undefined,
+                          outlineOffset: inCross ? "-2px" : undefined,
                         }}
                         data-cell="1"
-                        className="tabular border-b border-r border-rule text-center text-[10.5px] font-semibold"
+                        className="tier-fill tabular border-b border-r border-rule text-center text-[11px] font-semibold"
                         title={`${rowFigure.name} dan ${colFigure.name}: ${formatScore(cell.score)}${
                           cell.top_issue ? ` · isu utama: ${cell.top_issue}` : ""
                         }`}

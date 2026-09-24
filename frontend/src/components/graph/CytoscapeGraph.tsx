@@ -21,6 +21,7 @@ import cytoscape from "cytoscape";
 import fcose from "cytoscape-fcose";
 
 import type { GraphData, GraphNode } from "@/lib/types";
+import { activeCanvasTokens, type CanvasTokens } from "@/lib/canvasTokens";
 import {
   blocId,
   buildElements,
@@ -36,11 +37,6 @@ const MIN_ZOOM = 0.25;
 const MAX_ZOOM = 6;
 const ZOOM_STEP = 1.25;
 
-/** Design tokens. Mirrors DESIGN.md; see the note in theme.css. */
-const PAPER = "#F7F1E4";
-const INK = "#1C1814";
-const RULE = "#C9B99A";
-
 interface Props {
   data: GraphData;
   onSelect?: (node: GraphNode) => void;
@@ -52,30 +48,35 @@ interface Props {
  * Stylesheet.
  *
  * Colours come from the data (`data(color)`) for anything that encodes a
- * value, and from DESIGN.md tokens for chrome. No palette is invented here.
+ * value, and from the canvas token set for chrome. No palette is invented here.
+ *
+ * Node label size is 12px, up from 10.5px. The previous pass shipped ~7px
+ * labels at fit zoom, which the visual audit found unreadable and which defeats
+ * the purpose of a relationship map. Labels are also decluttered by influence
+ * in `refreshLabels`, so a smaller font is no longer compensating for overlap.
  */
-function stylesheet() {
+function stylesheet(t: CanvasTokens) {
   return [
     {
       selector: "node[isBloc]",
       style: {
-        "background-color": "rgba(201, 185, 154, 0.18)",
+        "background-color": t.blocFill,
         "background-opacity": 1,
         "border-width": 1,
         "border-style": "dashed",
-        "border-color": RULE,
+        "border-color": t.rule,
         label: "data(label)",
         "text-valign": "top",
         "text-halign": "center",
         "text-margin-y": -6,
-        "font-family": "Spectral, Georgia, serif",
-        "font-size": 11,
+        "font-family": "IBM Plex Sans, system-ui, sans-serif",
+        "font-size": 12,
         "font-weight": 600,
-        color: "#7A5320",
+        color: t.blocLabel,
         "text-transform": "uppercase",
         "text-wrap": "wrap",
         "text-max-width": "140px",
-        "padding": 14,
+        padding: 14,
         shape: "round-rectangle",
       },
     },
@@ -84,20 +85,21 @@ function stylesheet() {
       style: {
         "background-color": "data(color)",
         "border-width": 2,
-        "border-color": PAPER,
+        "border-color": t.surface,
         width: "mapData(influence, 0, 100, 18, 42)",
         height: "mapData(influence, 0, 100, 18, 42)",
         label: "data(labelText)",
         "text-valign": "bottom",
         "text-halign": "center",
         "text-margin-y": 5,
-        "font-family": "Inter Tight, system-ui, sans-serif",
-        "font-size": 10.5,
+        "font-family": "IBM Plex Sans, system-ui, sans-serif",
+        "font-size": 12,
+        "font-weight": 500,
         "text-wrap": "wrap",
-        "text-max-width": "96px",
-        color: INK,
+        "text-max-width": "104px",
+        color: t.ink,
         "text-outline-width": 2.5,
-        "text-outline-color": PAPER,
+        "text-outline-color": t.halo,
         "text-outline-opacity": 1,
       },
     },
@@ -105,7 +107,7 @@ function stylesheet() {
       selector: "node:selected",
       style: {
         "border-width": 3.5,
-        "border-color": "#7A5320",
+        "border-color": t.ruleStrong,
       },
     },
     {
@@ -184,7 +186,7 @@ export default function CytoscapeGraph({ data, onSelect, selectedId, showLabels 
     const cy = cytoscape({
       container,
       elements: buildElements(data, { compound: true }),
-      style: stylesheet() as cytoscape.StylesheetStyle[],
+      style: stylesheet(activeCanvasTokens()) as cytoscape.StylesheetStyle[],
       styleEnabled: true,
       minZoom: MIN_ZOOM,
       maxZoom: MAX_ZOOM,

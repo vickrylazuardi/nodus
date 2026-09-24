@@ -18,7 +18,7 @@ import {
 import { ConfirmDialog } from "@/pages/admin/AdminApp";
 import { useStatus } from "@/pages/admin/status";
 import { api } from "@/lib/api";
-import { scoreColor } from "@/lib/format";
+import { scoreTextColor } from "@/lib/format";
 import type { Figure } from "@/lib/types";
 
 /**
@@ -102,7 +102,7 @@ function toDefaults(figure: Figure): FormValues {
 function FieldError({ id, message }: { id: string; message?: string }) {
   if (!message) return null;
   return (
-    <p id={id} className="mt-1 text-[12.5px] text-hostile">
+    <p id={id} className="mt-1 text-[12.5px] text-hostile-text">
       {message}
     </p>
   );
@@ -228,7 +228,7 @@ function FigureEditor({
                 <li key={item.id} className="text-[13px]">
                   <a
                     href={`#${item.id}`}
-                    className="text-hostile underline underline-offset-2 hover:text-ink"
+                    className="text-hostile-text underline underline-offset-2 hover:text-ink"
                   >
                     {item.message}
                   </a>
@@ -347,13 +347,13 @@ function FigureEditor({
             {...form.register("is_active")}
             id="figure-is-active"
             type="checkbox"
-            className="accent-[#9A6B2F]"
+            className="accent-primary"
           />
           Tampilkan di situs publik
         </label>
 
         {serverError ? (
-          <p role="alert" className="text-[13px] text-hostile">
+          <p role="alert" className="text-[13px] text-hostile-text">
             {serverError}
           </p>
         ) : null}
@@ -461,7 +461,7 @@ export function AdminFigures() {
                   // min-h-[44px] is the touch-target floor. This field
                   // hand-rolls the input styles instead of using inputClass,
                   // so it missed the shared fix and measured 38px.
-                  "min-h-[44px] w-[200px] rounded-sm border border-rule bg-neutral-raised px-2.5 py-2 text-[13px]"
+                  "min-h-[44px] w-[200px] rounded-sm border border-control-border bg-neutral-raised px-2.5 py-2 text-[13px]"
                 }
               />
               <Button variant="primary" onClick={() => setEditing("new")}>
@@ -517,7 +517,7 @@ export function AdminFigures() {
                     <td className="px-3 py-2.5">
                       <ScoreValue
                         score={figure.avg_score}
-                        color={scoreColor(figure.avg_score)}
+                        color={scoreTextColor(figure.avg_score)}
                         size="sm"
                       />
                     </td>

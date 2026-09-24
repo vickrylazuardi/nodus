@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 
 import { ErrorState, LoadingState, Panel, PanelHeader, ScoreValue } from "@/components/ui";
 import { api } from "@/lib/api";
-import { scoreColor } from "@/lib/format";
+import { scoreTextColor } from "@/lib/format";
 
 export function AdminOverview() {
   const statsQuery = useQuery({ queryKey: ["stats"], queryFn: api.stats });
@@ -50,7 +50,7 @@ export function AdminOverview() {
               </Link>
               <Link
                 to="/admin/figur"
-                className="inline-flex min-h-[44px] items-center rounded-sm border border-rule px-3 py-2 text-[13px] hover:border-primary hover:text-primary-ink"
+                className="inline-flex min-h-[44px] items-center rounded-sm border border-control-border px-3 py-2 text-[13px] hover:border-primary hover:text-primary-ink"
               >
                 Kelola figur
               </Link>
@@ -93,7 +93,7 @@ export function AdminOverview() {
                   className="flex items-center justify-between gap-3 rounded-sm border border-rule px-3 py-2"
                 >
                   <span className="truncate text-[13px]">{row.pair}</span>
-                  <ScoreValue score={row.score} color={scoreColor(row.score)} size="sm" />
+                  <ScoreValue score={row.score} color={scoreTextColor(row.score)} size="sm" />
                 </li>
               ))}
             </ul>
@@ -132,7 +132,7 @@ export function AdminOverview() {
                   <td className="px-3 py-2.5">
                     <ScoreValue
                       score={Math.round(issue.avg)}
-                      color={scoreColor(issue.avg)}
+                      color={scoreTextColor(issue.avg)}
                       size="sm"
                     />
                   </td>

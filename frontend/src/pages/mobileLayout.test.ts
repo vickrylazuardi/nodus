@@ -123,13 +123,28 @@ describe("no fixed pixel floor can force horizontal overflow", () => {
     expect(panel![1]).toContain("min-w-0");
   });
 
-  it("gives the figure card a min-w-0 so it can shrink inside its grid", () => {
-    // Measured: the card rendered 283px inside a 238px track, pushing /figur to
-    // 324px on a 320px viewport.
+  it("keeps the figure index from forcing horizontal overflow", () => {
+    /*
+     * /figur used to be a 4-column card grid, and the card needed min-w-0 so it
+     * could shrink inside its track (measured: 283px card in a 238px track,
+     * pushing the document to 324px on a 320px viewport).
+     *
+     * It is now a ranked table instead, because sixty comparable people with
+     * numeric attributes want aligned columns rather than cards. A table cannot
+     * shrink below its content, so the equivalent requirement moved to the
+     * scroll wrapper: the wrapper must be shrinkable (min-w-0) and the table
+     * must carry an explicit min-width so it scrolls instead of squeezing.
+     * Both are asserted here, because dropping either one reintroduces the
+     * original overflow.
+     */
     const src = code("pages/FiguresPage.tsx");
-    const card = src.match(/<Link[\s\S]{0,400}?"([^"]*group flex[^"]*)"/);
-    expect(card, "figure card class not found").not.toBeNull();
-    expect(card![1]).toContain("min-w-0");
+    const wrapper = src.match(/className="([^"]*overflow-x-auto[^"]*)"/);
+    expect(wrapper, "figure index scroll wrapper not found").not.toBeNull();
+    expect(wrapper![1]).toContain("min-w-0");
+
+    const table = src.match(/<table className="([^"]*)"/);
+    expect(table, "figure index table not found").not.toBeNull();
+    expect(table![1]).toContain("min-w-");
   });
 
   it("pairs truncate with a shrinkable ancestor wherever truncation is needed", () => {

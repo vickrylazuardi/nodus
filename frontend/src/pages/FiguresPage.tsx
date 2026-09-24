@@ -5,99 +5,123 @@ import { Link } from "react-router-dom";
 import {
   EmptyState,
   ErrorState,
-  HIT_AREA,
   LoadingState,
   Panel,
   PanelHeader,
   ResultCount,
   ScoreRule,
-  ScoreValue,
   Tag,
+  TierChip,
 } from "@/components/ui";
 import { api } from "@/lib/api";
-import { cx, initials, scoreColor } from "@/lib/format";
+import { scoreBarColor, scoreTextColor } from "@/lib/format";
 import type { Figure } from "@/lib/types";
 
-function FigureCard({ figure }: { figure: Figure }) {
+/**
+ * A ranked index, not a card gallery.
+ *
+ * The previous pass rendered 60 profile cards in a 4-column grid. The visual
+ * audit found that the wrong instrument for this content: cards suit browsing
+ * a handful of profiles, while this is sixty comparable people carrying three
+ * numeric attributes each. Rows align the numbers into columns so they can be
+ * compared down the page, fit roughly twice as many figures per screen, and
+ * give the sort key somewhere to be visible.
+ *
+ * The rank column exists because the list is ordered by influence and nothing
+ * on screen previously said so.
+ */
+function FigureRow({ figure, rank }: { figure: Figure; rank: number }) {
   return (
-    <Link
-      to={`/figur/${figure.id}`}
-      className={cx(
-        HIT_AREA,
-        /*
-         * min-w-0 is load-bearing: this card is a grid item, and a grid item's
-         * automatic minimum size is its content's min-content width. Without
-         * it the card could not shrink below its widest unbreakable content and
-         * measured 283px inside a 238px track, pushing /figur to 324px on a
-         * 320px viewport.
-         */
-        "group flex min-w-0 flex-col gap-3 rounded-md border border-rule bg-neutral-raised p-4 transition-colors hover:border-primary",
-      )}
-    >
-      <div className="flex items-center gap-3">
-        <span
-          aria-hidden="true"
-          className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-rule bg-neutral-sunk font-display text-[14px] font-semibold text-primary-ink"
+    <tr className="group border-b border-rule last:border-b-0 hover:bg-neutral-sunk/60">
+      <td className="w-[52px] px-3 py-2 align-middle">
+        <span className="tabular text-[13px] font-semibold text-ink-muted">{rank}</span>
+      </td>
+
+      <td className="min-w-0 px-2 py-2 align-middle">
+        <Link
+          to={`/figur/${figure.id}`}
+          className="flex min-h-[44px] min-w-0 flex-col justify-center gap-0.5"
         >
-          {initials(figure.name)}
-        </span>
-        <div className="min-w-0">
-          <div className="truncate text-[14.5px] font-semibold group-hover:text-primary-ink">
+          <span className="truncate text-[14px] font-semibold group-hover:text-primary-ink">
             {figure.name}
-          </div>
-          <div className="truncate text-[11.5px] text-ink-soft">{figure.role ?? "–"}</div>
-        </div>
-      </div>
+          </span>
+          <span className="truncate text-[11.5px] text-ink-soft">
+            {[figure.role, figure.party].filter(Boolean).join(" · ") || "–"}
+          </span>
+        </Link>
+      </td>
 
-      <div className="flex flex-wrap gap-1.5">
-        {figure.party ? <Tag>{figure.party}</Tag> : null}
-        {figure.bloc ? <Tag>{figure.bloc}</Tag> : null}
-      </div>
+      {/*
+        Coalition is the one attribute with a colour language of its own, so it
+        gets a chip rather than plain text. The chip carries the tier colour of
+        the figure's own average score, which ties the index to the map's
+        encoding instead of introducing a second, competing one.
+      */}
+      <td className="hidden px-2 py-2 align-middle lg:table-cell">
+        {figure.bloc ? <Tag>{figure.bloc}</Tag> : <span className="text-ink-muted">–</span>}
+      </td>
 
-      <div className="grid grid-cols-3 gap-2 border-t border-rule pt-3">
-        <div>
-          <ScoreValue score={figure.avg_score} color={scoreColor(figure.avg_score)} size="sm" />
-          <div className="mt-0.5 text-[10.5px] uppercase tracking-[0.06em] text-ink-soft">
-            Skor rata-rata
-          </div>
-        </div>
-        <div>
-          <span className="tabular text-[15px] font-semibold">{figure.relationship_count}</span>
-          <div className="mt-0.5 text-[10.5px] uppercase tracking-[0.06em] text-ink-soft">
-            Relasi
-          </div>
-        </div>
-        <div>
-          <span className="tabular text-[15px] font-semibold">{figure.influence}</span>
-          <div className="mt-0.5 text-[10.5px] uppercase tracking-[0.06em] text-ink-soft">
-            Pengaruh
-          </div>
-        </div>
-      </div>
+      <td className="w-[96px] px-2 py-2 text-right align-middle">
+        <span
+          className="tabular text-[15px] font-semibold"
+          style={{ color: scoreTextColor(figure.avg_score) }}
+        >
+          {figure.avg_score > 0 ? `+${figure.avg_score}` : figure.avg_score}
+        </span>
+      </td>
 
-      {figure.best_ally || figure.worst_rival ? (
-        <div className="flex flex-col gap-1 text-[11.5px]">
+      {/* The bar repeats the numeral as a length, on the shared ±100 scale. */}
+      <td className="hidden w-[132px] px-3 py-2 align-middle sm:table-cell">
+        <ScoreRule score={figure.avg_score} color={scoreBarColor(figure.avg_score)} height={8} />
+      </td>
+
+      <td className="w-[72px] px-2 py-2 text-right align-middle">
+        <span className="tabular text-[13px] text-ink-soft">{figure.relationship_count}</span>
+      </td>
+
+      <td className="w-[88px] px-3 py-2 text-right align-middle">
+        <span className="tabular text-[14px] font-semibold">{figure.influence}</span>
+      </td>
+
+      {/*
+        The two strongest relations, not "ally" and "rival".
+
+        Measured against the live API: 23 of 60 figures have a `worst_rival`
+        whose score is POSITIVE, because it is the least-positive relation, not
+        a negative one. Rendering that in hostile red under a "rival" label
+        promised a polarity the data did not deliver. The column is now labelled
+        for what it actually shows, and each value takes its colour from its own
+        score, so a +46 is green wherever it appears.
+      */}
+      <td className="hidden w-[220px] px-3 py-2 align-middle xl:table-cell">
+        <div className="flex flex-col gap-0.5 text-[11.5px]">
           {figure.best_ally ? (
-            <div className="flex items-center justify-between gap-2 text-ally">
-              <span className="truncate">▲ {figure.best_ally.name}</span>
-              <span className="tabular shrink-0 font-semibold">
+            <span className="flex items-center justify-between gap-2">
+              <span className="truncate text-ink-soft">{figure.best_ally.name}</span>
+              <span
+                className="tabular shrink-0 font-semibold"
+                style={{ color: scoreTextColor(figure.best_ally.score) }}
+              >
                 {figure.best_ally.score > 0 ? "+" : ""}
                 {figure.best_ally.score}
               </span>
-            </div>
+            </span>
           ) : null}
           {figure.worst_rival ? (
-            <div className="flex items-center justify-between gap-2 text-hostile">
-              <span className="truncate">▼ {figure.worst_rival.name}</span>
-              <span className="tabular shrink-0 font-semibold">
+            <span className="flex items-center justify-between gap-2">
+              <span className="truncate text-ink-soft">{figure.worst_rival.name}</span>
+              <span
+                className="tabular shrink-0 font-semibold"
+                style={{ color: scoreTextColor(figure.worst_rival.score) }}
+              >
                 {figure.worst_rival.score > 0 ? "+" : ""}
                 {figure.worst_rival.score}
               </span>
-            </div>
+            </span>
           ) : null}
         </div>
-      ) : null}
-    </Link>
+      </td>
+    </tr>
   );
 }
 
@@ -142,7 +166,13 @@ export function FiguresPage() {
       <PanelHeader
         level={1}
         title="Figur"
-        description={`${total} figur, diurutkan menurut tingkat pengaruh. Skor rata-rata adalah rata-rata relasinya terhadap seluruh figur lain dalam peta ini.`}
+        description={
+          <>
+            Diurutkan menurut tingkat pengaruh, dari yang tertinggi. Skor rata-rata adalah
+            rata-rata relasi figur tersebut terhadap seluruh figur lain dalam peta ini, pada
+            rentang −100 sampai +100.
+          </>
+        }
         actions={
           <input
             type="search"
@@ -150,17 +180,12 @@ export function FiguresPage() {
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Cari nama, partai, jabatan…"
             aria-label="Cari figur"
-            className="min-h-[44px] w-[220px] max-w-full rounded-sm border border-rule bg-neutral-raised px-2.5 py-2 text-[13px] text-ink placeholder:text-ink-soft/60"
+            className="min-h-[44px] w-[220px] max-w-full rounded-sm border border-control-border bg-neutral-raised px-2.5 py-2 text-[13px] text-ink placeholder:text-ink-muted"
           />
         }
       />
 
-      <ResultCount
-        visible={filtered.length}
-        total={total}
-        noun="figur"
-        className="mb-4"
-      />
+      <ResultCount visible={filtered.length} total={total} noun="figur" className="mb-4" />
 
       {filtered.length === 0 ? (
         <EmptyState
@@ -169,21 +194,81 @@ export function FiguresPage() {
             <button
               type="button"
               onClick={() => setQuery("")}
-              className="min-h-[44px] rounded-sm border border-rule px-3 py-1.5 text-[13px] hover:border-primary hover:text-primary-ink"
+              className="min-h-[44px] rounded-sm border border-control-border px-3 py-1.5 text-[13px] hover:border-primary hover:text-primary-ink"
             >
               Hapus filter
             </button>
           }
         />
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {filtered.map((figure) => (
-            <FigureCard key={figure.id} figure={figure} />
-          ))}
+        <div className="-mx-5 min-w-0 overflow-x-auto">
+          <table className="w-full min-w-[640px] border-collapse text-left">
+            <caption className="sr-only">
+              Daftar figur politik diurutkan menurut tingkat pengaruh, dengan skor rata-rata,
+              jumlah relasi, dan relasi terkuat.
+            </caption>
+            <thead>
+              <tr className="border-b border-rule-strong">
+                <th
+                  scope="col"
+                  className="px-3 py-2 text-[12px] font-semibold uppercase tracking-[0.06em] text-ink-muted"
+                >
+                  #
+                </th>
+                <th
+                  scope="col"
+                  className="px-2 py-2 text-[12px] font-semibold uppercase tracking-[0.06em] text-ink-muted"
+                >
+                  Figur
+                </th>
+                <th
+                  scope="col"
+                  className="hidden px-2 py-2 text-[12px] font-semibold uppercase tracking-[0.06em] text-ink-muted lg:table-cell"
+                >
+                  Blok
+                </th>
+                <th
+                  scope="col"
+                  className="px-2 py-2 text-right text-[12px] font-semibold uppercase tracking-[0.06em] text-ink-muted"
+                >
+                  Skor
+                </th>
+                <th
+                  scope="col"
+                  className="hidden px-3 py-2 text-[12px] font-semibold uppercase tracking-[0.06em] text-ink-muted sm:table-cell"
+                >
+                  <span className="sr-only">Skala skor</span>
+                </th>
+                <th
+                  scope="col"
+                  className="px-2 py-2 text-right text-[12px] font-semibold uppercase tracking-[0.06em] text-ink-muted"
+                >
+                  Relasi
+                </th>
+                <th
+                  scope="col"
+                  className="px-3 py-2 text-right text-[12px] font-semibold uppercase tracking-[0.06em] text-ink-muted"
+                >
+                  Pengaruh
+                </th>
+                <th
+                  scope="col"
+                  className="hidden px-3 py-2 text-[12px] font-semibold uppercase tracking-[0.06em] text-ink-muted xl:table-cell"
+                >
+                  Relasi terkuat
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((figure, index) => (
+                <FigureRow key={figure.id} figure={figure} rank={index + 1} />
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </Panel>
   );
 }
 
-export { ScoreRule };
+export { TierChip };

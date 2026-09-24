@@ -11,23 +11,54 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary: #9a6b2f;
-  --color-primary-bright: #c08a3e;
-  /* Darker bronze for TEXT. The fill bronze above is only 3.75:1 on
-     parchment, which fails WCAG AA for body text; this clears 5.49:1. */
-  --color-primary-ink: #7a5320;
-  --color-neutral: #efe6d4;
-  --color-neutral-raised: #f7f1e4;
-  --color-neutral-sunk: #e2d6be;
-  --color-ink: #1c1814;
-  --color-ink-soft: #4a4139;
-  --color-ally: #2f6b5e;
-  --color-hostile: #8c2f2a;
-  --color-secondary: #525a66;
-  --color-rule: #c9b99a;
+  --color-primary: #2e3fbf;
+  --color-primary-hover: #4256d6;
+  --color-primary-ink: #2e3fbf;
+  --color-neutral: #f4f6f8;
+  --color-neutral-raised: #ffffff;
+  --color-neutral-sunk: #e8ebf0;
+  --color-ink: #0c1421;
+  --color-ink-soft: #46536b;
+  --color-ink-muted: #5d6b82;
+  --color-rule: #d3d9e2;
+  --color-rule-strong: #aeb7c6;
+  /*
+   * Control border. A separate role from `rule` because WCAG 1.4.11 requires
+   * 3:1 for an interactive boundary while a data rule should recede. Registered
+   * here so `border-control-border` resolves as a Tailwind utility; the
+   * per-theme values live in the :root and [data-theme="dark"] blocks below.
+   */
+  --color-control-border: #727d8f;
+  --color-ally: #0c4232;
+  --color-hostile: #6e1913;
+  --color-secondary: #6a7487;
+  /*
+   * Text-role poles. In light mode the tier fills are already dark enough to
+   * read as type (10.7:1 and 11.6:1 on the page), so these alias the fills. In
+   * dark mode they are re-declared to lighter values, because a fill that
+   * carries white type cannot also be legible as type on a dark ground.
+   */
+  --color-ally-text: #0c4232;
+  --color-hostile-text: #6e1913;
 
-  --font-display: "Spectral", Georgia, serif;
-  --font-sans: "Inter Tight", ui-sans-serif, system-ui, sans-serif;
+  /*
+   * NOTE ON `@theme` VS `:root`.
+   *
+   * Tailwind v4 tree-shakes `@theme`: it emits only the variables that some
+   * generated utility actually references. A token consumed from JavaScript
+   * through `var(--x)` (the bar fills, the track, the control border, the tier
+   * text ladder) has no utility pointing at it, so a value declared here is
+   * DROPPED at build time and silently resolves to empty. That is not a
+   * hypothetical: it made every light-mode bar fill transparent.
+   *
+   * Rule: values that components read via `var()` go in `:root` or
+   * `[data-theme="dark"]` below, never here. This block is for values Tailwind
+   * must turn into utilities (`bg-neutral-raised`, `text-ink`, ...).
+   */
+
+  --font-display: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
 
   --radius-none: 0px;
   --radius-sm: 2px;
@@ -47,15 +78,196 @@
  * them to roles so components never reference a raw hex.
  */
 :root {
+  color-scheme: light;
+
+  /*
+   * Scale track.
+   *
+   * The unfilled portion of a score bar is the DENOMINATOR of the scale: without
+   * seeing it, a reader cannot tell where the value sits or what range the bar
+   * is drawn on, and the bar stops being a measurement. The sunk surface is only
+   * 1.20:1 against a raised panel, which is too faint to read as a track, so the
+   * track gets its own token at 1.42:1. Deliberately below the 3:1 a UI boundary
+   * would need: a track is a background for data, not a control boundary.
+   */
+  --scale-track: #d3d9e2;
+
+  /*
+   * Bar fill, per theme.
+   *
+   * The bar is drawn ON the track, not on the page, so the fill only has to
+   * separate from the track. Light mode uses the tier fill (8.0:1 for
+   * solid_bloc against the track). Dark mode overrides these with brighter
+   * values, because a dark fill on a dark track measures 1.04:1 and makes the
+   * bar invisible. This is the one place a tier colour legitimately differs
+   * between themes: a bar is a mark on a track, not a fill carrying white type.
+   * Matrix cells and chips carry text and keep the invariant fill.
+   */
+  --bar-solid_bloc: #0c4232;
+  --bar-alliance: #185542;
+  --bar-friendly: #276650;
+  --bar-cordial: #3c745e;
+  --bar-neutral: #6a7487;
+  --bar-wary: #96584e;
+  --bar-tension: #934337;
+  --bar-rivalry: #862e24;
+  --bar-hostile: #6e1913;
+
+  /*
+   * Control border.
+   *
+   * WCAG 1.4.11 requires 3:1 for the boundary of an interactive control, and
+   * `rule-strong` is only 2.0:1 on a white panel: it is a data rule, and data
+   * rules are meant to recede. Form fields, selects and buttons need a boundary
+   * a reader can find, so they get their own token at 4.2:1. One value for both
+   * would either make every table rule shout or leave every input invisible.
+   */
+  --control-border: #727d8f;
+
+  /*
+   * Tier TEXT ladder.
+   *
+   * Tier fills are the data and never change between themes. But the same nine
+   * values are also used as TYPE: score numerals, relationship scores. A fill
+   * dark enough to carry white text is far too dark to read as text on a dark
+   * ground (measured 1.5:1), so text gets its own ladder.
+   *
+   * Both ladders keep the fill ordering, so intensity still reads: light mode
+   * darkens outward from neutral, dark mode brightens outward. The `neutral`
+   * entry is a step darker than its fill because the fill sits at 3.94:1 on the
+   * sunk surface, just under AA.
+   */
+  --tier-solid_bloc-text: #0c4232;
+  --tier-alliance-text: #185542;
+  --tier-friendly-text: #276650;
+  --tier-cordial-text: #3c745e;
+  --tier-neutral-text: #616a7c;
+  --tier-wary-text: #96584e;
+  --tier-tension-text: #934337;
+  --tier-rivalry-text: #862e24;
+  --tier-hostile-text: #6e1913;
+
   --surface-page: var(--color-neutral);
   --surface-raised: var(--color-neutral-raised);
   --surface-sunk: var(--color-neutral-sunk);
   --text-primary: var(--color-ink);
   --text-secondary: var(--color-ink-soft);
-  --text-muted: var(--color-secondary);
+  --text-muted: var(--color-ink-muted);
   --border-hairline: var(--color-rule);
+  --border-strong: var(--color-rule-strong);
+  --accent-fill: var(--color-primary);
+  --accent-fill-hover: var(--color-primary-hover);
+  --accent-ink: var(--color-primary-ink);
   --focus-ring: var(--color-primary-ink);
-  --overlay: rgb(28 24 20 / 0.55);
+  --overlay: rgb(12 20 33 / 0.55);
+  /* Chips and matrix cells gain a boundary ring on dark ground, where a
+     dark tier fill sits close to the page. On light ground it is unneeded. */
+  --chip-ring: transparent;
+}
+
+/*
+ * Dark theme.
+ *
+ * This block overrides the RAW `--color-*` tokens, not only the semantic
+ * aliases below. Components use Tailwind utilities (`bg-neutral-raised`,
+ * `text-ink`), and those resolve to the raw tokens, so overriding only the
+ * aliases left every panel white while the page went dark. Both layers are
+ * therefore re-declared here.
+ *
+ * The tier RAMP is deliberately not re-declared. A tier fill is the data: a
+ * reader comparing a light-mode screenshot with a dark-mode one must see the
+ * same colour for the same tier. Only ground, ink, rules and the accent swap.
+ * The two tier values that also serve as TEXT do need lighter variants, which
+ * is what --color-ally-text and --color-hostile-text are for.
+ */
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --color-neutral: #0f1419;
+  --color-neutral-raised: #171d24;
+  --color-neutral-sunk: #1f262e;
+  --color-ink: #e8ecf2;
+  --color-ink-soft: #a9b4c4;
+  --color-ink-muted: #8b97a8;
+  --color-rule: #2a323c;
+  --color-rule-strong: #3c4652;
+  --color-control-border: #6b7787;
+  --color-primary: #4c5df5;
+  --color-primary-hover: #4351da;
+  --color-primary-ink: #93a0ff;
+  --color-secondary: #8b97a8;
+
+  /*
+   * Text-role poles.
+   *
+   * The tier fills (#0C4232 ally, #6E1913 hostile) are far too dark to read as
+   * type on a dark ground: measured at 1.5:1. A single value cannot be both a
+   * fill that carries white type and a colour that is itself legible as type on
+   * dark, so the role is split, exactly as `primary` and `primary-ink` are.
+   * The fills stay in TIER_COLORS; these are for text only.
+   */
+  --color-ally-text: #6ee7b7;
+  --color-hostile-text: #f87171;
+
+  /* The track lifts against a dark panel: 1.44:1, matching the light theme's step. */
+  --scale-track: #303845;
+
+  /*
+   * Bar fill, per theme.
+   *
+   * The bar is drawn ON the scale track, not on the page, so the fill only has
+   * to separate from the track. The dark tier fills sit at ~1.04:1 against a
+   * dark track, which makes every bar invisible, so dark mode uses the brighter
+   * tier value. This is the one place a tier colour legitimately differs between
+   * themes: a bar is a mark on a track, not a fill carrying white type, so the
+   * "tier fills never change" rule does not apply to it. Matrix cells and chips
+   * carry text and keep the invariant fill.
+   */
+  --bar-solid_bloc: #5ee2ba;
+  --bar-alliance: #57d0a9;
+  --bar-friendly: #58bf9b;
+  --bar-cordial: #5fad8d;
+  --bar-neutral: #848e9f;
+  --bar-wary: #c3928a;
+  --bar-tension: #d8a097;
+  --bar-rivalry: #e8ada7;
+  --bar-hostile: #f4bfbb;
+
+  /* 3.4:1 on the most restrictive dark surface, so a control boundary is findable. */
+  --control-border: #6b7787;
+
+  /*
+   * The tier text ladder, re-declared brighter.
+   *
+   * Dark mode inverts the direction: a stronger relationship is a BRIGHTER
+   * value, because on a dark ground brightness reads as intensity. The order is
+   * therefore the mirror of the fills, and every entry clears 4.5:1 on the
+   * lightest dark surface (the sunk fill).
+   */
+  --tier-solid_bloc-text: #5ee2ba;
+  --tier-alliance-text: #57d0a9;
+  --tier-friendly-text: #58bf9b;
+  --tier-cordial-text: #5fad8d;
+  --tier-neutral-text: #848e9f;
+  --tier-wary-text: #c3928a;
+  --tier-tension-text: #d8a097;
+  --tier-rivalry-text: #e8ada7;
+  --tier-hostile-text: #f4bfbb;
+
+  --surface-page: #0f1419;
+  --surface-raised: #171d24;
+  --surface-sunk: #1f262e;
+  --text-primary: #e8ecf2;
+  --text-secondary: #a9b4c4;
+  --text-muted: #8b97a8;
+  --border-hairline: #2a323c;
+  --border-strong: #3c4652;
+  --accent-fill: #4c5df5;
+  --accent-fill-hover: #4351da;
+  --accent-ink: #93a0ff;
+  --focus-ring: #93a0ff;
+  --overlay: rgb(0 0 0 / 0.65);
+  --chip-ring: #3c4652;
 }
 
 @layer base {
@@ -79,13 +291,14 @@
   h4 {
     font-family: var(--font-display);
     font-weight: 600;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.018em;
     color: var(--text-primary);
   }
 
   /*
-   * Focus visibility is a hard requirement (antislop R-32). A two-tone ring
-   * keeps it legible on both the parchment and raised fills.
+   * Focus visibility is a hard requirement (antislop R-32). The ring is the
+   * accent so it can never be confused with a tier fill, and it carries an
+   * offset so it stays visible on both the page and raised surfaces.
    */
   :focus-visible {
     outline: 2px solid var(--focus-ring);
@@ -93,52 +306,73 @@
     border-radius: var(--radius-sm);
   }
 
-  /* Numerals in score positions must not shift width as they update. */
+  /*
+   * Measured values only. Mono digits are tabular by construction, which is
+   * what keeps a column of scores from shifting width as values update.
+   */
   .tabular {
-    font-family: var(--font-display);
+    font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
     font-feature-settings: "tnum";
   }
 
   ::selection {
-    background-color: color-mix(in srgb, var(--color-primary) 30%, transparent);
+    background-color: color-mix(in srgb, var(--accent-fill) 28%, transparent);
   }
 }
 
 @layer components {
   /*
-   * The identity motif: a hairline split at the midpoint with the filled
-   * portion extending left for hostile and right for allied. Appears in the
-   * matrix, relationship rows, and the per-issue breakdown at three sizes.
+   * The identity motif: a horizontal measure with a marked zero axis, ticks,
+   * and the value filled outward from the centre, left for hostile and right
+   * for allied. Appears in the matrix, relationship rows, the per-issue
+   * breakdown, and the profile hero at four zoom levels.
    */
-  .score-rule {
+  .scale-rule {
     position: relative;
-    height: 6px;
     background-color: var(--surface-sunk);
     border-radius: var(--radius-sm);
     overflow: hidden;
   }
 
-  .score-rule::before {
+  /* The zero axis. Without it the bar is decoration, not a measurement. */
+  .scale-rule::before {
     content: "";
     position: absolute;
     inset-block: 0;
     left: 50%;
     width: 1px;
-    background-color: color-mix(in srgb, var(--color-ink) 25%, transparent);
-    z-index: 1;
+    background-color: var(--border-strong);
+    z-index: 2;
   }
 
-  .score-rule > span {
+  .scale-rule > span {
     position: absolute;
     inset-block: 0;
     border-radius: var(--radius-sm);
   }
+
+  /* Tick marks at ±50 and ±100 on a primary reading position. */
+  .scale-tick {
+    position: absolute;
+    inset-block: 0;
+    width: 1px;
+    background-color: var(--border-hairline);
+    z-index: 1;
+  }
+
+  /*
+   * Chips and matrix cells carry a boundary ring on dark ground, where a dark
+   * tier fill sits close to the page fill.
+   */
+  .tier-fill {
+    box-shadow: inset 0 0 0 1px var(--chip-ring);
+  }
 }
 
 /*
- * Motion follows the declared MOTION 2 dial: transitions and a single
- * entrance reveal, no parallax, no looping animation.
+ * Motion follows the declared MOTION 2 dial: transitions and hover feedback,
+ * no parallax, no looping animation. In an instrument, motion is feedback.
  */
 @media (prefers-reduced-motion: reduce) {
   *,
